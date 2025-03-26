@@ -1,10 +1,11 @@
-from pydantic import BaseModel, Field
+from dataclasses import dataclass, field
 
 from src.domain.entities.card import Card
 
 
-class Dealer(BaseModel):
-    cards: list[Card] = Field(default_factory=list)
+@dataclass
+class Dealer:
+    cards: list[Card] = field(default_factory=list)
 
     def calculate_score(self) -> int:
         score = sum(card.get_value() for card in self.cards)

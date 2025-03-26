@@ -1,5 +1,5 @@
 from enum import Enum
-from pydantic import BaseModel, Field
+from dataclasses import dataclass, field
 
 from src.domain.entities.card import Card
 
@@ -10,11 +10,12 @@ class PlayerResult(Enum):
     OUT = "out"
 
 
-class Player(BaseModel):
+@dataclass
+class Player:
     username: str | None
     user_tg_id: int
     bid: int = 0
-    cards: list[Card] = Field(default_factory=list)
+    cards: list[Card] = field(default_factory=list)
     result: PlayerResult | None = None
 
     def calculate_score(self) -> int:

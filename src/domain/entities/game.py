@@ -1,6 +1,6 @@
 import random
 from datetime import datetime
-from pydantic import BaseModel, Field
+from dataclasses import dataclass, field
 
 from src.domain.entities.card import Card, Rank, Suit
 from src.domain.entities.player import Player
@@ -14,11 +14,12 @@ def init_deck():
     return deck
 
 
-class Game(BaseModel):
+@dataclass
+class Game:
     chat_id: int
     players: dict[int, Player]
     turn_order: tuple[int, ...]
-    dealer: Dealer = Field(default_factory=Dealer)
-    deck: list[Card] = Field(default_factory=init_deck)
-    created_at: datetime = Field(default_factory=datetime.now)
+    dealer: Dealer = field(default_factory=Dealer)
+    deck: list[Card] = field(default_factory=init_deck)
+    created_at: datetime = field(default_factory=datetime.now)
     current_player_index: int = 0
