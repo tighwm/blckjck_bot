@@ -1,5 +1,5 @@
 from enum import Enum
-from dataclasses import dataclass
+from pydantic import BaseModel, ConfigDict
 
 
 class Rank(str, Enum):
@@ -25,8 +25,9 @@ class Suit(str, Enum):
     SPADES = "spades"
 
 
-@dataclass(frozen=True)
-class Card:
+class Card(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     rank: Rank
     suit: Suit
 

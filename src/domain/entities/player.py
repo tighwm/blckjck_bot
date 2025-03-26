@@ -1,7 +1,7 @@
 from enum import Enum
-from dataclasses import dataclass, field
+from pydantic import BaseModel, Field
 
-from src.domain.entities.card import Card, Rank
+from src.domain.entities.card import Card
 
 
 class PlayerResult(Enum):
@@ -10,19 +10,17 @@ class PlayerResult(Enum):
     OUT = "out"
 
 
-@dataclass
-class Player:
+class Player(BaseModel):
     username: str | None
     user_tg_id: int
     bid: int = 0
-    cards: list[Card] = field(default_factory=list)
-    score: int = 0
+    cards: list[Card] = Field(default_factory=list)
     result: PlayerResult | None = None
 
     def calculate_score(self) -> int:
         score = sum(card.get_value() for card in self.cards)
 
-        aces_count = sum(1 for card in self.cards if card.rank == Rank.ACE)
+        aces_count = sum(1 for card in self.cards if card.rank == "A")
         while score > 21 and aces_count > 0:
             score -= 10
             aces_count -= 1
@@ -34,7 +32,7 @@ class Player:
         return self.calculate_score()
 
     def has_blackjack(self) -> bool:
-        return len(self.cards) == 2 and self.calculate_score() == 21
+        return len(self.cards) == 2 and self.score == 21
 
     def is_busted(self) -> bool:
-        return self.calculate_score() > 21
+        return self.score > 21
