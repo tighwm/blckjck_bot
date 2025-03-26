@@ -22,7 +22,6 @@ class Player:
     def calculate_score(self) -> int:
         score = sum(card.get_value() for card in self.cards)
 
-        # Обработка тузов
         aces_count = sum(1 for card in self.cards if card.rank == Rank.ACE)
         while score > 21 and aces_count > 0:
             score -= 10
