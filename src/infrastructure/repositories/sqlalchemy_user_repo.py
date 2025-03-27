@@ -28,6 +28,8 @@ class SQLAlchemyUserRepository(UserRepoInterface, TelegramUserRepoMixin):
     ) -> UserSchema | None:
         stmt = select(User).where(User.id == id)
         user_model = await self.session.scalar(stmt)
+        if not user_model:
+            return None
         return UserSchema.model_validate(user_model)
 
     async def update_user(
@@ -45,14 +47,16 @@ class SQLAlchemyUserRepository(UserRepoInterface, TelegramUserRepoMixin):
     async def get_user_by_tg_id(
         self,
         tg_id: int,
-    ) -> UserSchema:
+    ) -> UserSchema | None:
         stmt = select(User).where(User.tg_id == tg_id)
-        user_model = self.session.scalar(stmt)
+        user_model = await self.session.scalar(stmt)
+        if not user_model:
+            return None
         return UserSchema.model_validate(user_model)
 
     async def delete_user(
         self,
         user: User,
     ) -> None:
-        self.session.delete(user)
+        await self.session.delete(user)
         return None
