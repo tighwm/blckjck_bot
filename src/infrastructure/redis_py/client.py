@@ -1,8 +1,12 @@
-import asyncio
+from redis.asyncio import Redis
 
-from redis.asyncio import Redis, client
+from src.infrastructure.config import settings
 
 
-# class RedisClient:
-#     def __init__(self, redis: Redis):
-#         self.redis = redis
+class RedisSingleton:
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = Redis.from_url(str(settings.redis.url))
+        return cls._instance
