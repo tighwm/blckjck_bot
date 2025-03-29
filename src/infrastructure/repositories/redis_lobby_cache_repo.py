@@ -22,7 +22,7 @@ class RedisLobbyCacheRepo(CacheLobbyRepoInterface):
     ):
         return f"{self.key_prefix}:{chat_id}"
 
-    async def create_lobby(
+    async def cache_lobby(
         self,
         lobby: Lobby,
         exp: int = 180,
@@ -33,7 +33,7 @@ class RedisLobbyCacheRepo(CacheLobbyRepoInterface):
         await self.redis.set(
             name=key,
             value=lobby_schema.model_dump_json(),
-            ex=exp,
+            ex=None,
         )
 
         return lobby_schema
@@ -41,9 +41,11 @@ class RedisLobbyCacheRepo(CacheLobbyRepoInterface):
     async def get_lobby(
         self,
         chat_id: int,
-    ) -> LobbySchema:
+    ) -> LobbySchema | None:
         key = self._get_key(chat_id)
-        data = self.redis.get(key)
+        data = await self.redis.get(key)
+        if not data:
+            return None
         lobby_schema = LobbySchema.model_validate_json(data)
         return lobby_schema
 

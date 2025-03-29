@@ -2,14 +2,13 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.application.interfaces.users_repo_interface import (
-    UserRepoInterface,
     TelegramUserRepoMixin,
 )
 from src.application.schemas.user import UserSchema, UserPartial, UserUpdate, UserCreate
 from src.infrastructure.database import User
 
 
-class SQLAlchemyUserRepository(UserRepoInterface, TelegramUserRepoMixin):
+class SQLAlchemyUserRepository(TelegramUserRepoMixin):
     def __init__(self, session: AsyncSession):
         self.session = session
 
