@@ -15,12 +15,18 @@ class UserModel(Protocol):
 
 class UserRepoInterface(ABC):
     @abstractmethod
-    async def create_user(self, user_in: UserCreate) -> UserSchema:
+    async def create_user(
+        self,
+        user_in: UserCreate,
+    ) -> UserSchema:
         """Создание пользователя"""
         pass
 
     @abstractmethod
-    async def get_user_by_id(self, id: int) -> UserSchema | None:
+    async def get_user_by_id(
+        self,
+        id: int,
+    ) -> UserSchema | None:
         """Получить юзера по айди"""
         pass
 
@@ -35,12 +41,18 @@ class UserRepoInterface(ABC):
         pass
 
     @abstractmethod
-    async def delete_user(self, user: UserSchema) -> None:
+    async def delete_user(
+        self,
+        user: UserSchema,
+    ) -> None:
         """Удалить пользователя"""
         pass
 
 
-class TelegramUserRepoMixin(ABC):
+class TelegramUserRepoMixin(UserRepoInterface):
     @abstractmethod
-    async def get_user_by_tg_id(self, tg_id: int) -> UserSchema | None:
+    async def get_user_by_tg_id(
+        self,
+        tg_id: int,
+    ) -> UserSchema | None:
         pass
