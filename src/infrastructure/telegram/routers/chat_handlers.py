@@ -1,3 +1,5 @@
+import asyncio
+
 from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
@@ -50,18 +52,14 @@ router.message.middleware(AntiFlood())
 #     await message.answer(text=text)
 
 
-def users_str(users: list[UserSchema]):
-    users_name = [user.username for user in users]
-    return ", ".join(users_name)
-
-
 @router.message(Command("startgame"))
 async def handle_start_game(
     message: Message,
     lobby_service: LobbyService,
 ):
+    chat_id = message.chat.id
     lobby = await lobby_service.create_lobby(
-        chat_id=message.chat.id,
+        chat_id=chat_id,
         user_id=message.from_user.id,
     )
     if not lobby:
@@ -70,10 +68,18 @@ async def handle_start_game(
 
     text = (
         f"Возможно игра началась я ебу что ли\n"
-        f"Игроки: {users_str(lobby.users)}\n"
-        f"Таймер: а нет его епта"
+        f"Игроки: {lobby.str_users()}\n"
+        f"Таймер: 80"
     )
-    await message.answer(text=text)
+    msg = await message.answer(text=text)
+    task = asyncio.create_task(
+        lobby_service.lobby_timer(message=msg),
+    )
+    LobbyService.save_timer(
+        chat_id=chat_id,
+        message=msg,
+        task=task,
+    )
 
 
 @router.message(Command("join"))
@@ -92,3 +98,16 @@ async def handle_join(
     await message.answer(
         f"Пользователь {message.from_user.username} присоединился к игре."
     )
+
+
+@router.message(Command("cancel"))
+async def handle_cancel(
+    message: Message,
+    lobby_service: LobbyService,
+):
+    res = await lobby_service.cancel_lobby(message.chat.id)
+
+    if not res:
+        await message.answer("Начни игру для начала долбоеб.")
+        return
+    await message.answer("Набор на игру отменен.")

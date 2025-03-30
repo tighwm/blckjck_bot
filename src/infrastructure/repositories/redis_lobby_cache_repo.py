@@ -55,3 +55,10 @@ class RedisLobbyCacheRepo(CacheLobbyRepoInterface):
     ):
         key = self._get_key(chat_id)
         await self.redis.delete(key)
+
+    async def exists_lobby(
+        self,
+        chat_id: int,
+    ):
+        key = self._get_key(chat_id)
+        return await self.redis.exists(key)

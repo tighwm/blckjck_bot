@@ -17,7 +17,7 @@ class CacheLobbyRepoInterface(ABC):
     async def get_lobby(
         self,
         chat_id: int,
-    ) -> LobbySchema:
+    ) -> LobbySchema | None:
         """Получить лобби из кэша"""
         pass
 
@@ -27,4 +27,12 @@ class CacheLobbyRepoInterface(ABC):
         chat_id: int,
     ) -> None:
         """Удалить лобби из кэша"""
+        pass
+
+    @abstractmethod
+    async def exists_lobby(
+        self,
+        chat_id: int,
+    ):
+        """Проверить существование лобби"""
         pass

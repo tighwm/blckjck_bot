@@ -1,3 +1,7 @@
+import asyncio
+
+from aiogram.types import Message
+
 from src.application.interfaces import CacheLobbyRepoInterface, TelegramUserRepoMixin
 from src.domain.entities import Lobby, User
 from src.infrastructure.database.models.user import User as UserModel
@@ -5,6 +9,8 @@ from src.application.schemas import LobbySchema
 
 
 class LobbyService:
+    timer_tasks: dict[int, dict[str, asyncio.Task | Message]] = {}
+
     def __init__(
         self,
         lobby_repo: CacheLobbyRepoInterface,
@@ -29,6 +35,31 @@ class LobbyService:
     ) -> User:
         user_schema = await self.user_repo.get_user_by_tg_id(tg_id=user_id)
         return User(**user_schema.model_dump())
+
+    @classmethod
+    def save_timer(
+        cls,
+        chat_id: int,
+        message: Message,
+        task: asyncio.Task,
+    ):
+        cls.timer_tasks[chat_id] = {"task": task, "message": message}
+
+    async def lobby_timer(
+        self,
+        message: Message,
+        timer_out: int = 80,
+    ):
+        while timer_out >= 0:
+            await asyncio.sleep(5)
+            timer_out -= 5
+            lobby_schema = await self.lobby_repo.get_lobby(message.chat.id)
+            text = (
+                f"Возможно игра началась я ебу что ли\n"
+                f"Игроки: {lobby_schema.str_users()}\n"
+                f"Таймер: {timer_out}"
+            )
+            await message.edit_text(text=text)
 
     async def create_lobby(
         self,
@@ -63,7 +94,11 @@ class LobbyService:
         lobby.add_user(user)
         return await self.lobby_repo.cache_lobby(lobby=lobby)
 
-    async def remove_user(self, chat_id: int, user_id: int) -> LobbySchema:
+    async def remove_user(
+        self,
+        chat_id: int,
+        user_id: int,
+    ) -> LobbySchema:
         lobby_schema = await self.lobby_repo.get_lobby(chat_id=chat_id)
         if not lobby_schema:
             return None
@@ -77,3 +112,18 @@ class LobbyService:
         lobby = Lobby(**lobby_schema.model_dump())
         lobby.delete_user(user)
         return await self.lobby_repo.cache_lobby(lobby=lobby)
+
+    async def cancel_lobby(
+        self,
+        chat_id: int,
+    ):
+        res = await self.lobby_repo.exists_lobby(chat_id)
+        if not res:
+            return False
+
+        await self.lobby_repo.delete_lobby(chat_id=chat_id)
+        timer_task = LobbyService.timer_tasks.pop(chat_id)
+        if timer_task:
+            timer_task["task"].cancel()
+            await timer_task["message"].delete()
+        return True
