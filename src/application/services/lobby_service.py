@@ -67,7 +67,7 @@ class LobbyService:
         lobby_schema = await self.lobby_repo.get_lobby(chat_id=chat_id)
         if not lobby_schema:
             return None
-        if self._check_user_in_lobby(
+        if not self._check_user_in_lobby(
             user_id=user_id,
             lobby_schema=lobby_schema,
         ):
