@@ -33,9 +33,15 @@ class RedisGameCacheRepo(CacheGameRepoInterface):
 
         return game_schema
 
-    async def get_cache_game(self, chat_id: int) -> GameSchema:
+    async def get_game(
+        self,
+        chat_id: int,
+    ) -> GameSchema | None:
         key = self._get_key(chat_id)
         data = await self.redis.get(key)
+        if not data:
+            return None
+
         game_schema = GameSchema.model_validate_json(data)
         return game_schema
 

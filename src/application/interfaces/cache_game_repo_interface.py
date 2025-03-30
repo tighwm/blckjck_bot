@@ -11,7 +11,7 @@ class CacheGameRepoInterface(ABC):
         pass
 
     @abstractmethod
-    async def get_cache_game(self, chat_id: int) -> GameSchema:
+    async def get_game(self, chat_id: int) -> GameSchema:
         """Вытащить игру из кэша"""
         pass
 
