@@ -6,10 +6,10 @@ from aiogram.types import Message
 from src.infrastructure.database import db_helper
 from src.infrastructure.repositories import (
     SQLAlchemyUserRepository,
-    RedisLobbyCacheRepo,
+    RedisLobbyCacheRepoTG,
 )
 from src.infrastructure.redis_py.client import RedisSingleton
-from src.application.services import LobbyService
+from src.application.services import LobbyServiceTG
 
 
 class LobbyServiceGetter(BaseMiddleware):
@@ -21,8 +21,8 @@ class LobbyServiceGetter(BaseMiddleware):
     ) -> Any:
         async with db_helper.session_getter() as session:
             user_repo = SQLAlchemyUserRepository(session)
-            cache_repo = RedisLobbyCacheRepo(redis=RedisSingleton())
-            lobby_service = LobbyService(
+            cache_repo = RedisLobbyCacheRepoTG(redis=RedisSingleton())
+            lobby_service = LobbyServiceTG(
                 lobby_repo=cache_repo,
                 user_repo=user_repo,
             )

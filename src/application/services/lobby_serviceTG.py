@@ -2,18 +2,19 @@ import asyncio
 
 from aiogram.types import Message
 
-from src.application.interfaces import CacheLobbyRepoInterface, TelegramUserRepoMixin
+from src.application.interfaces import TelegramUserRepoMixin
+from src.infrastructure.repositories import RedisLobbyCacheRepoTG
 from src.domain.entities import Lobby, User
 from src.infrastructure.database.models.user import User as UserModel
 from src.application.schemas import LobbySchema
 
 
-class LobbyService:
+class LobbyServiceTG:
     timer_tasks: dict[int, dict[str, asyncio.Task | Message]] = {}
 
     def __init__(
         self,
-        lobby_repo: CacheLobbyRepoInterface,
+        lobby_repo: RedisLobbyCacheRepoTG,
         user_repo: TelegramUserRepoMixin,
     ):
         self.lobby_repo = lobby_repo
@@ -48,9 +49,10 @@ class LobbyService:
     async def lobby_timer(
         self,
         message: Message,
-        timer_out: int = 80,
+        timer_out: int = 15,
     ):
-        while timer_out >= 0:
+        lobby_schema = None
+        while timer_out > 5:
             await asyncio.sleep(5)
             timer_out -= 5
             lobby_schema = await self.lobby_repo.get_lobby(message.chat.id)
@@ -60,6 +62,14 @@ class LobbyService:
                 f"Таймер: {timer_out}"
             )
             await message.edit_text(text=text)
+
+        try:
+            await self.lobby_repo.push_starting(
+                chat_id=lobby_schema.chat_id,
+                message=message,
+            )
+        except Exception as e:
+            print(e)
 
     async def create_lobby(
         self,
@@ -122,7 +132,7 @@ class LobbyService:
             return False
 
         await self.lobby_repo.delete_lobby(chat_id=chat_id)
-        timer_task = LobbyService.timer_tasks.pop(chat_id)
+        timer_task = LobbyServiceTG.timer_tasks.pop(chat_id)
         if timer_task:
             timer_task["task"].cancel()
             await timer_task["message"].delete()

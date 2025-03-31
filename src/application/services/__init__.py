@@ -1,7 +1,7 @@
 __all__ = (
-    "LobbyService",
-    "GameService",
+    "LobbyServiceTG",
+    "GameServiceTG",
 )
 
-from src.application.services.lobby_service import LobbyService
-from src.application.services.game_service import GameService
+from src.application.services.lobby_serviceTG import LobbyServiceTG
+from src.application.services.game_serviceTG import GameServiceTG

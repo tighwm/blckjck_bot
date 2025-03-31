@@ -5,7 +5,7 @@ from src.application.interfaces import CacheGameRepoInterface
 from src.domain.entities import Lobby, Game, Player
 
 
-class GameService:
+class GameServiceTG:
     def __init__(
         self,
         game_repo=CacheGameRepoInterface,

@@ -1,6 +1,6 @@
 import asyncio
 
-from aiogram import Router
+from aiogram import Router, Bot
 from aiogram.filters import Command
 from aiogram.types import Message
 
@@ -12,7 +12,7 @@ from src.infrastructure.telegram.middlewares import (
 from src.infrastructure.repositories.sqlalchemy_user_repo import (
     SQLAlchemyUserRepository,
 )
-from src.application.services import LobbyService
+from src.application.services import LobbyServiceTG
 from src.application.schemas import UserSchema
 
 router = Router()
@@ -55,7 +55,7 @@ router.message.middleware(AntiFlood())
 @router.message(Command("startgame"))
 async def handle_start_game(
     message: Message,
-    lobby_service: LobbyService,
+    lobby_service: LobbyServiceTG,
 ):
     chat_id = message.chat.id
     lobby = await lobby_service.create_lobby(
@@ -75,7 +75,7 @@ async def handle_start_game(
     task = asyncio.create_task(
         lobby_service.lobby_timer(message=msg),
     )
-    LobbyService.save_timer(
+    LobbyServiceTG.save_timer(
         chat_id=chat_id,
         message=msg,
         task=task,
@@ -85,7 +85,7 @@ async def handle_start_game(
 @router.message(Command("join"))
 async def handle_join(
     message: Message,
-    lobby_service: LobbyService,
+    lobby_service: LobbyServiceTG,
 ):
     lobby = await lobby_service.add_user(
         chat_id=message.chat.id,
@@ -103,7 +103,7 @@ async def handle_join(
 @router.message(Command("cancel"))
 async def handle_cancel(
     message: Message,
-    lobby_service: LobbyService,
+    lobby_service: LobbyServiceTG,
 ):
     res = await lobby_service.cancel_lobby(message.chat.id)
 

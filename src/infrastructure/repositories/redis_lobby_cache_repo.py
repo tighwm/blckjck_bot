@@ -1,4 +1,5 @@
 from redis.asyncio import Redis
+from aiogram.types import Message
 
 from src.application.interfaces.cache_lobby_repo_interface import (
     CacheLobbyRepoInterface,
@@ -12,9 +13,11 @@ class RedisLobbyCacheRepo(CacheLobbyRepoInterface):
         self,
         redis: Redis,
         key_prefix: str = "Lobby",
+        stream_key: str = "game:starting",
     ):
         self.redis = redis
         self.key_prefix = key_prefix
+        self.stream_key = stream_key
 
     def _get_key(
         self,
@@ -62,3 +65,23 @@ class RedisLobbyCacheRepo(CacheLobbyRepoInterface):
     ):
         key = self._get_key(chat_id)
         return await self.redis.exists(key)
+
+
+class RedisLobbyCacheRepoTG(RedisLobbyCacheRepo):
+    async def push_starting(
+        self,
+        chat_id: int,
+        message: Message,
+    ):
+        key = self._get_key(chat_id)
+        data = await self.redis.get(key)
+        if not data:
+            return None
+
+        await self.redis.xadd(
+            name=self.stream_key,
+            fields={
+                "lobby_data": data,
+                "message": message.model_dump_json(),
+            },
+        )
