@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from src.domain.entities.user import User
+from src.application.schemas import LobbySchema
 
 
 @dataclass
@@ -13,3 +14,10 @@ class Lobby:
 
     def delete_user(self, user: User):
         self.users.remove(user)
+
+    @classmethod
+    def from_dto(cls, data: LobbySchema) -> "Lobby":
+        return cls(
+            chat_id=data.chat_id,
+            users=[User.from_dto(user_schema) for user_schema in data.users],
+        )

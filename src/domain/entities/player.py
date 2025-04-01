@@ -2,6 +2,7 @@ from enum import Enum
 from dataclasses import dataclass, field
 
 from src.domain.entities.card import Card
+from src.application.schemas import PlayerSchema
 
 
 class PlayerResult(Enum):
@@ -13,7 +14,7 @@ class PlayerResult(Enum):
 @dataclass
 class Player:
     username: str | None
-    user_tg_id: int
+    tg_id: int
     bid: int = 0
     cards: list[Card] = field(default_factory=list)
     result: PlayerResult | None = None
@@ -37,3 +38,13 @@ class Player:
 
     def is_busted(self) -> bool:
         return self.score > 21
+
+    @classmethod
+    def from_dto(cls, data: PlayerSchema) -> "Player":
+        return cls(
+            username=data.username,
+            tg_id=data.tg_id,
+            bid=data.bid,
+            cards=[Card.from_dto(card_schema) for card_schema in data.cards],
+            result=data.result,
+        )

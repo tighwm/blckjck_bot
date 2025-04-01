@@ -5,9 +5,11 @@ __all__ = (
     "Game",
     "Player",
     "Dealer",
+    "Suit",
+    "Rank",
 )
 
-from src.domain.entities.card import Card
+from src.domain.entities.card import Card, Rank, Suit
 from src.domain.entities.user import User
 from src.domain.entities.lobby import Lobby
 from src.domain.entities.game import Game
