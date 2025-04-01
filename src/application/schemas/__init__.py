@@ -8,9 +8,9 @@ __all__ = (
     "UserCreate",
 )
 
-from src.application.schemas.lobby import LobbySchema
-from src.application.schemas.card import CardSchema
-from src.application.schemas.dealer import DealerSchema
-from src.application.schemas.game import GameSchema
-from src.application.schemas.player import PlayerSchema
-from src.application.schemas.user import UserSchema, UserCreate
+from .card import CardSchema
+from .player import PlayerSchema
+from .user import UserSchema, UserCreate
+from .lobby import LobbySchema
+from .dealer import DealerSchema
+from .game import GameSchema

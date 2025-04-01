@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from src.application.schemas.user import UserSchema
+from src.application.schemas import UserSchema
 
 
 class LobbySchema(BaseModel):

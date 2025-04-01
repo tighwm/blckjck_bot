@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from src.domain.entities.card import Rank, Suit
+from src.domain.entities import Rank, Suit
 
 
 class CardSchema(BaseModel):

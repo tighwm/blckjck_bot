@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from src.application.schemas.card import CardSchema
+from src.application.schemas import CardSchema
 
 
 class DealerSchema(BaseModel):

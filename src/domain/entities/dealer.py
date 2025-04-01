@@ -1,7 +1,10 @@
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
-from src.domain.entities.card import Card
-from src.application.schemas import DealerSchema
+from src.domain.entities import Card
+
+if TYPE_CHECKING:
+    from src.application.schemas import DealerSchema
 
 
 @dataclass
@@ -29,7 +32,7 @@ class Dealer:
         return self.score > 21
 
     @classmethod
-    def from_dto(cls, data: DealerSchema) -> "Dealer":
+    def from_dto(cls, data: "DealerSchema") -> "Dealer":
         return cls(
             cards=[Card.from_dto(card_schema) for card_schema in data.cards],
         )

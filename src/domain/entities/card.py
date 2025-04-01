@@ -1,7 +1,9 @@
 from enum import Enum
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
-from src.application.schemas import CardSchema
+if TYPE_CHECKING:
+    from src.application.schemas import CardSchema
 
 
 class Rank(str, Enum):
@@ -44,7 +46,7 @@ class Card:
         return f"{self.rank.value}{self.suit.value[0]}"
 
     @classmethod
-    def from_dto(cls, data: CardSchema) -> "Card":
+    def from_dto(cls, data: "CardSchema") -> "Card":
         return cls(
             rank=data.rank,
             suit=data.suit,

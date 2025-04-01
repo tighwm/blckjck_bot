@@ -1,8 +1,11 @@
 from enum import Enum
+from typing import TYPE_CHECKING
 from dataclasses import dataclass, field
 
-from src.domain.entities.card import Card
-from src.application.schemas import PlayerSchema
+from src.domain.entities import Card
+
+if TYPE_CHECKING:
+    from src.application.schemas import PlayerSchema
 
 
 class PlayerResult(Enum):
@@ -40,7 +43,7 @@ class Player:
         return self.score > 21
 
     @classmethod
-    def from_dto(cls, data: PlayerSchema) -> "Player":
+    def from_dto(cls, data: "PlayerSchema") -> "Player":
         return cls(
             username=data.username,
             tg_id=data.tg_id,

@@ -1,9 +1,12 @@
 import random
 from datetime import datetime
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 from src.domain.entities import Card, Rank, Suit, Player, Dealer
-from src.application.schemas import GameSchema
+
+if TYPE_CHECKING:
+    from src.application.schemas import GameSchema
 
 
 def deck_factory():
@@ -31,7 +34,7 @@ class Game:
         self.turn_order = tuple(self.players.keys())
 
     @classmethod
-    def from_dto(cls, data: GameSchema) -> "Game":
+    def from_dto(cls, data: "GameSchema") -> "Game":
         return cls(
             chat_id=data.chat_id,
             players={
