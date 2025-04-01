@@ -1,9 +1,7 @@
 from datetime import datetime
 from pydantic import BaseModel
 
-from src.application.schemas.card import CardSchema
-from src.application.schemas.player import PlayerSchema
-from src.application.schemas.dealer import DealerSchema
+from src.application.schemas import CardSchema, DealerSchema, PlayerSchema
 
 
 class GameSchema(BaseModel):
