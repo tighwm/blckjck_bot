@@ -10,11 +10,10 @@ from src.infrastructure.telegram.middlewares import (
     LobbyServiceGetter,
     AntiFlood,
 )
-from src.infrastructure.repositories.sqlalchemy_user_repo import (
-    SQLAlchemyUserRepository,
-)
-from src.application.services import LobbyServiceTG
-from src.application.schemas import UserSchema
+from src.application.services import LobbyServiceTG, GameServiceTG
+from src.infrastructure.telegram.routers.states import ChatState
+from src.domain.types.game import SuccessType, ErrorType
+from src.infrastructure.telegram.routers.utils import game_btns
 
 router = Router()
 router.message.middleware(SaveUserDB())
@@ -117,3 +116,35 @@ async def handle_cancel(
         await message.answer("Начни игру для начала долбоеб.")
         return
     await message.answer("Набор на игру отменен.")
+
+
+# Регулярное выражение для фильтрации ставок от 1 и без чувствительности к регистру
+filters_on_bid = F.text.regexp(r"(?i)^ставка\s([1-9]\d*)$")
+
+
+@router.message(filters_on_bid, ChatState.bid)
+async def bid_handle(
+    message: Message,
+    game_service: GameServiceTG,
+):
+    user_bid = int(message.text.split()[1])  # Получаем ставку из "ставка (число)"
+    if user_bid < 5:
+        await message.answer("Ставка не дожна быть менее 5")
+        return
+
+    response = await game_service.player_set_bid(
+        chat_id=message.chat.id,
+        user_tg_id=message.from_user.id,
+        bid=user_bid,
+    )
+    if response is None:
+        await message.answer("Копейки пересчитай свои.")
+        return
+
+    if response.type == SuccessType.BID_ACCEPTED:
+        await message.answer("Ставка принята.")
+    if response.type == SuccessType.ALL_PLAYERS_BET:
+        await message.answer(
+            text=f"Ход игрока {response.data.get("player")}",
+            reply_markup=game_btns(),
+        )
