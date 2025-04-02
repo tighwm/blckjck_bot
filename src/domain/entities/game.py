@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from src.domain.entities import Card, Rank, Suit, Player, Dealer
+from src.domain.types.game import GameResult, ErrorType, ErrorMessages, SuccessType
 
 if TYPE_CHECKING:
     from src.application.schemas import GameSchema
@@ -46,4 +47,45 @@ class Game:
             created_at=data.created_at,
             current_player_index=data.current_player_index,
             turn_order=data.turn_order,
+        )
+
+    def _get_current_turn_player(self):
+        return self.players.get(self.turn_order[self.current_player_index])
+
+    def _get_player(
+        self,
+        player_id: int,
+    ):
+        return self.players.get(player_id)
+
+    def _check_all_bets(self) -> bool:
+        return any(player.bid != 0 for player in self.players.values())
+
+    def player_bid(
+        self,
+        player_id: int,
+        bid: int,
+    ) -> GameResult:
+        player = self._get_player(player_id)
+        if not player:
+            return GameResult(
+                success=False,
+                type=ErrorType.PLAYER_NOT_FOUND,
+                message=ErrorMessages.get(
+                    ErrorType.PLAYER_NOT_FOUND,
+                    player_id=player_id,
+                ),
+            )
+
+        player.bid = bid
+        if self._check_all_bets():
+            return GameResult(
+                success=True,
+                type=SuccessType.ALL_PLAYERS_BET,
+                data={"player": self._get_current_turn_player()},
+            )
+
+        return GameResult(
+            success=True,
+            type=SuccessType.BID_ACCEPTED,
         )
