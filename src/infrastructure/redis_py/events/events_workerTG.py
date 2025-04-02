@@ -6,8 +6,6 @@ from aiogram.types import Message
 
 from src.application.services import GameServiceTG
 from src.application.schemas import LobbySchema
-from src.application.interfaces import CacheLobbyRepoInterface
-from aiogram.fsm.context import FSMContext
 
 
 class EventWorkersTG:
@@ -52,8 +50,4 @@ class EventWorkersTG:
             game_schema = await self.game_service.create_game(
                 lobby_schema=lobby_schema,
             )
-            # text = (
-            #     f"Игра типа началась.\n"
-            #     f"Ход игрока {game_schema.players.get(game_schema.turn_order[game_schema.current_player_index]).username}"
-            # )
             await message.answer(text="Делайте ставки к началу игры.").as_(self.bot)

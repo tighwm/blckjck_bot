@@ -36,7 +36,7 @@ class LobbyServiceTG:
         user_id: int,
     ) -> User:
         user_schema = await self.user_repo.get_user_by_tg_id(tg_id=user_id)
-        return User(**user_schema.model_dump())
+        return User.from_dto(user_schema)
 
     @classmethod
     def save_timer(
@@ -59,19 +59,20 @@ class LobbyServiceTG:
             timer_out -= 5
             lobby_schema = await self.lobby_repo.get_lobby(message.chat.id)
             text = (
-                f"Возможно игра началась я ебу что ли\n"
+                f"Возможно набор на игру начался, я ебу что ли\n"
                 f"Игроки: {lobby_schema.str_users()}\n"
                 f"Таймер: {timer_out}"
             )
             await message.edit_text(text=text)
 
-        try:
-            await self.lobby_repo.push_starting(
-                chat_id=lobby_schema.chat_id,
-                message=message,
-            )
-        except Exception as e:
-            print(e)
+        await self.lobby_repo.push_starting(
+            chat_id=lobby_schema.chat_id,
+            message=message,
+        )
+        LobbyServiceTG.timer_tasks.pop(lobby_schema.chat_id)
+        await message.delete()
+        await state.set_state(ChatState.bid)
+        await self.lobby_repo.delete_lobby(lobby_schema.chat_id)
 
     async def create_lobby(
         self,
@@ -83,7 +84,7 @@ class LobbyServiceTG:
             return None
 
         user_schema = await self.user_repo.get_user_by_tg_id(tg_id=user_id)
-        user = User(**user_schema.model_dump())
+        user = User.from_dto(user_schema)
         lobby = Lobby(chat_id=chat_id, users=[user])
         return await self.lobby_repo.cache_lobby(lobby=lobby)
 
@@ -102,7 +103,7 @@ class LobbyServiceTG:
             return None
 
         user = await self._get_user_entities(user_id=user_id)
-        lobby = Lobby(**lobby_schema.model_dump())
+        lobby = Lobby.from_dto(lobby_schema)
         lobby.add_user(user)
         return await self.lobby_repo.cache_lobby(lobby=lobby)
 
@@ -121,7 +122,7 @@ class LobbyServiceTG:
             return None
 
         user = await self._get_user_entities(user_id=user_id)
-        lobby = Lobby(**lobby_schema.model_dump())
+        lobby = Lobby.from_dto(lobby_schema)
         lobby.delete_user(user)
         return await self.lobby_repo.cache_lobby(lobby=lobby)
 

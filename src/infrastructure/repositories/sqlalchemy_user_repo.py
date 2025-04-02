@@ -5,7 +5,7 @@ from src.application.interfaces.users_repo_interface import (
     TelegramUserRepoMixin,
 )
 from src.application.schemas.user import UserSchema, UserPartial, UserUpdate, UserCreate
-from src.infrastructure.database import User
+from src.infrastructure.database import User as UserModel
 
 
 class SQLAlchemyUserRepository(TelegramUserRepoMixin):
@@ -16,7 +16,7 @@ class SQLAlchemyUserRepository(TelegramUserRepoMixin):
         self,
         user_in: UserCreate,
     ) -> UserSchema:
-        user_model = User(**user_in.model_dump())
+        user_model = UserModel(**user_in.model_dump())
         self.session.add(user_model)
         await self.session.commit()
         return UserSchema.model_validate(user_model)
@@ -24,20 +24,23 @@ class SQLAlchemyUserRepository(TelegramUserRepoMixin):
     async def get_user_by_id(
         self,
         id: int,
-    ) -> UserSchema | None:
-        stmt = select(User).where(User.id == id)
+        schema: bool = True,
+    ) -> UserSchema | UserModel | None:
+        stmt = select(UserModel).where(UserModel.id == id)
         user_model = await self.session.scalar(stmt)
         if not user_model:
             return None
-        return UserSchema.model_validate(user_model)
+        if schema:
+            return UserSchema.model_validate(user_model)
+        return user_model
 
     async def update_user(
         self,
-        user: User,
+        user: UserModel,
         data_update: UserUpdate | UserPartial,
-        partitial: bool = False,
+        partial: bool = False,
     ) -> UserSchema:
-        user_update = data_update.model_dump(exclude_unset=partitial).items()
+        user_update = data_update.model_dump(exclude_unset=partial).items()
         for name, value in user_update:
             setattr(user, name, value)
         await self.session.commit()
@@ -46,16 +49,19 @@ class SQLAlchemyUserRepository(TelegramUserRepoMixin):
     async def get_user_by_tg_id(
         self,
         tg_id: int,
-    ) -> UserSchema | None:
-        stmt = select(User).where(User.tg_id == tg_id)
+        schema: bool = True,
+    ) -> UserSchema | UserModel | None:
+        stmt = select(UserModel).where(UserModel.tg_id == tg_id)
         user_model = await self.session.scalar(stmt)
         if not user_model:
             return None
-        return UserSchema.model_validate(user_model)
+        if schema:
+            return UserSchema.model_validate(user_model)
+        return user_model
 
     async def delete_user(
         self,
-        user: User,
+        user: UserModel,
     ) -> None:
         await self.session.delete(user)
         return None
