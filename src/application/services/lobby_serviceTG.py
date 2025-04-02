@@ -1,12 +1,13 @@
 import asyncio
 
 from aiogram.types import Message
+from aiogram.fsm.context import FSMContext
 
 from src.application.interfaces import TelegramUserRepoMixin
-from src.infrastructure.repositories import RedisLobbyCacheRepoTG
-from src.domain.entities import Lobby, User
-from src.infrastructure.database.models.user import User as UserModel
 from src.application.schemas import LobbySchema
+from src.infrastructure.repositories import RedisLobbyCacheRepoTG
+from src.infrastructure.telegram.routers.states import ChatState
+from src.domain.entities import Lobby, User
 
 
 class LobbyServiceTG:
@@ -49,6 +50,7 @@ class LobbyServiceTG:
     async def lobby_timer(
         self,
         message: Message,
+        state: FSMContext,
         timer_out: int = 15,
     ):
         lobby_schema = None

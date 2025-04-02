@@ -1,8 +1,9 @@
 import asyncio
 
-from aiogram import Router, Bot
-from aiogram.filters import Command
+from aiogram import Router, F
+from aiogram.filters import Command, StateFilter
 from aiogram.types import Message
+from aiogram.fsm.context import FSMContext
 
 from src.infrastructure.telegram.middlewares import (
     SaveUserDB,
@@ -52,10 +53,11 @@ router.message.middleware(AntiFlood())
 #     await message.answer(text=text)
 
 
-@router.message(Command("startgame"))
+@router.message(Command("startgame"), StateFilter(None))
 async def handle_start_game(
     message: Message,
     lobby_service: LobbyServiceTG,
+    state: FSMContext,
 ):
     chat_id = message.chat.id
     lobby = await lobby_service.create_lobby(
@@ -66,6 +68,7 @@ async def handle_start_game(
         await message.answer(f"Игра начата и так.")
         return
 
+    await state.set_state(ChatState.lobby)
     text = (
         f"Возможно игра началась я ебу что ли\n"
         f"Игроки: {lobby.str_users()}\n"
@@ -73,7 +76,10 @@ async def handle_start_game(
     )
     msg = await message.answer(text=text)
     task = asyncio.create_task(
-        lobby_service.lobby_timer(message=msg),
+        lobby_service.lobby_timer(
+            message=msg,
+            state=state,
+        ),
     )
     LobbyServiceTG.save_timer(
         chat_id=chat_id,
@@ -82,7 +88,7 @@ async def handle_start_game(
     )
 
 
-@router.message(Command("join"))
+@router.message(Command("join"), ChatState.lobby)
 async def handle_join(
     message: Message,
     lobby_service: LobbyServiceTG,
@@ -100,7 +106,7 @@ async def handle_join(
     )
 
 
-@router.message(Command("cancel"))
+@router.message(Command("cancel"), ChatState.lobby)
 async def handle_cancel(
     message: Message,
     lobby_service: LobbyServiceTG,
