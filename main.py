@@ -13,6 +13,9 @@ from src.infrastructure.redis_py.events.events_workerTG import EventWorkersTG
 from src.infrastructure.redis_py.client import RedisSingleton
 from src.infrastructure.repositories import RedisGameCacheRepo
 from src.application.services import GameServiceTG
+from src.utils.logger import setup_logger
+
+logger = setup_logger(name=__name__, level=logging.INFO)
 
 aiogrambot = AiogramBot(
     bot=Bot(
@@ -21,16 +24,20 @@ aiogrambot = AiogramBot(
     ),
     storage=RedisStorage.from_url(str(settings.redis.url)),
 )
-redis_ton = RedisSingleton()
-# lobby_repo = RedisLobbyCacheRepo(redis=redis_ton)
-game_repo = RedisGameCacheRepo(redis=redis_ton)
-game_service = GameServiceTG(game_repo=game_repo)
-game_workers = EventWorkersTG(
-    bot=aiogrambot.bot,
-    game_service=game_service,
-    redis=redis_ton,
-    # lobby_repo=lobby_repo,
-)
+
+
+def setup_game_workers():
+    redis_ton = RedisSingleton()
+    game_repo = RedisGameCacheRepo(redis=redis_ton)
+    game_service = GameServiceTG(game_repo=game_repo)
+    return EventWorkersTG(
+        bot=aiogrambot.bot,
+        game_service=game_service,
+        redis=redis_ton,
+    )
+
+
+game_workers = setup_game_workers()
 
 
 async def main():
