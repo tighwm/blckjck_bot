@@ -40,7 +40,9 @@ class EventWorkersTG:
             if not stream:
                 continue
 
+            # Получаем данные (словарь) и айди сообщения из потока
             stream_name, messages = next(iter(stream.items()))
+            msg_id = messages[0][0][0]
             data = messages[0][0][1]
             lobby_json_str = data[b"lobby_data"]
             message_json_str = data[b"message"]
@@ -51,3 +53,4 @@ class EventWorkersTG:
                 lobby_schema=lobby_schema,
             )
             await message.answer(text="Делайте ставки к началу игры.").as_(self.bot)
+            await self.redis.xdel(stream_name, msg_id)

@@ -9,6 +9,7 @@ from src.infrastructure.telegram.middlewares import (
     SaveUserDB,
     LobbyServiceGetter,
     AntiFlood,
+    GameServiceGetter,
 )
 from src.application.services import LobbyServiceTG, GameServiceTG
 from src.infrastructure.telegram.routers.states import ChatState
@@ -16,9 +17,10 @@ from src.domain.types.game import SuccessType, ErrorType
 from src.infrastructure.telegram.routers.utils import game_btns
 
 router = Router()
+router.message.middleware(AntiFlood())
 router.message.middleware(SaveUserDB())
 router.message.middleware(LobbyServiceGetter())
-router.message.middleware(AntiFlood())
+router.message.middleware(GameServiceGetter())
 
 # @router.message(Command("check"))
 # async def check_handler(
@@ -52,7 +54,7 @@ router.message.middleware(AntiFlood())
 #     await message.answer(text=text)
 
 
-@router.message(Command("startgame"), StateFilter(None))
+@router.message(Command("startgame"), StateFilter(None), flags={"rate_limit": 1.0})
 async def handle_start_game(
     message: Message,
     lobby_service: LobbyServiceTG,
@@ -125,6 +127,7 @@ filters_on_bid = F.text.regexp(r"(?i)^ставка\s([1-9]\d*)$")
 @router.message(filters_on_bid, ChatState.bid)
 async def bid_handle(
     message: Message,
+    state: FSMContext,
     game_service: GameServiceTG,
 ):
     user_bid = int(message.text.split()[1])  # Получаем ставку из "ставка (число)"
@@ -144,7 +147,9 @@ async def bid_handle(
     if response.type == SuccessType.BID_ACCEPTED:
         await message.answer("Ставка принята.")
     if response.type == SuccessType.ALL_PLAYERS_BET:
+        await state.set_state(ChatState.game)
+        player = response.data.get("player")
         await message.answer(
-            text=f"Ход игрока {response.data.get("player")}",
-            reply_markup=game_btns(),
+            text=f"Ход игрока {player.get("player_name")}",
+            reply_markup=game_btns(player.get("player_id")),
         )

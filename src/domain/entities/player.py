@@ -12,6 +12,8 @@ class PlayerResult(Enum):
     WIN = "win"
     LOSE = "lose"
     OUT = "out"
+    BUST = "bust"
+    BLACKJACK = "blackjack"
 
 
 @dataclass
@@ -22,7 +24,10 @@ class Player:
     cards: list[Card] = field(default_factory=list)
     result: PlayerResult | None = None
 
-    def calculate_score(self) -> int:
+    def _calculate_score(self) -> int:
+        if not self.cards:
+            return 0
+
         score = sum(card.get_value() for card in self.cards)
 
         aces_count = sum(1 for card in self.cards if card.rank == "A")
@@ -34,13 +39,18 @@ class Player:
 
     @property
     def score(self):
-        return self.calculate_score()
+        return self._calculate_score()
 
     def has_blackjack(self) -> bool:
         return len(self.cards) == 2 and self.score == 21
 
     def is_busted(self) -> bool:
         return self.score > 21
+
+    def cards_str(self) -> str:
+        if not self.cards:
+            return "Нет карт"
+        return ", ".join(map(str, self.cards))
 
     @classmethod
     def from_dto(cls, data: "PlayerSchema") -> "Player":
