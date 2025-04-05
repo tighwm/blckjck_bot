@@ -1,16 +1,19 @@
 from enum import Enum
+import logging
 
 from src.application.schemas import GameSchema, LobbySchema, UserPartial
 from src.infrastructure.repositories import RedisGameCacheRepo, SQLAlchemyUserRepository
 from src.domain.entities import Lobby, Game, Player
 from src.domain.types.game import GameResult, ErrorType, SuccessType
 
+logger = logging.getLogger(__name__)
+
 
 class GameServiceTG:
     def __init__(
         self,
-        user_repo: SQLAlchemyUserRepository,
         game_repo: RedisGameCacheRepo,
+        user_repo: SQLAlchemyUserRepository | None = None,
     ):
         self.game_repo = game_repo
         self.user_repo = user_repo
@@ -42,6 +45,7 @@ class GameServiceTG:
     ):
         game_schema = await self.game_repo.get_game(chat_id=chat_id)
         if not game_schema:
+            logger.debug("Игра в чате с айди chat_id=%s не была найдена", chat_id)
             return None
 
         user_model = await self.user_repo.get_user_by_tg_id(
@@ -49,6 +53,12 @@ class GameServiceTG:
             schema=False,
         )
         if bid > user_model.balance:
+            logger.debug(
+                "Ставка %s превышает баланс %s игрока id=%s",
+                bid,
+                user_model.balance,
+                user_model.id,
+            )
             return None
 
         game = Game.from_dto(game_schema)
@@ -57,6 +67,7 @@ class GameServiceTG:
             bid=bid,
         )
         if not res.success:
+            logger.debug("Ставка не удалась по причине %s", res.type)
             return res
 
         new_balance = user_model.balance - bid
@@ -67,4 +78,24 @@ class GameServiceTG:
             partial=True,
         )
         await self.game_repo.cache_game(game)
+        logger.debug("Ставка принята.")
+        return res
+
+    async def player_turn_hit(
+        self,
+        chat_id: int,
+        user_tg_id: int,
+    ):
+        game_schema = await self.game_repo.get_game(chat_id=chat_id)
+        if not game_schema:
+            logger.debug("Игра в чате с айди chat_id=%s не была найдена", chat_id)
+            return None
+
+        game = Game.from_dto(game_schema)
+        res = game.player_hit(player_id=user_tg_id)
+        await self.game_repo.cache_game(game)
+        if res.data.get("next_player") is None:
+            # TODO: ивент воркеру на ход дилера в таком то чате.
+            return res
+
         return res
