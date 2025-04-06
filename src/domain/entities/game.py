@@ -50,13 +50,28 @@ class Game:
         )
 
     def _get_current_turn_player(self):
-        return self.players.get(self.turn_order[self.current_player_index])
+        try:
+            player = self.players.get(self.turn_order[self.current_player_index])
+        except IndexError:
+            return None
+        return player
 
     def _get_player_by_id(
         self,
         player_id: int,
     ):
         return self.players.get(player_id)
+
+    def _check_is_player_turn(
+        self,
+        player: Player,
+    ) -> bool:
+        """Проверка на то, ход ли данного игрока"""
+        try:
+            cur_player_id = self.turn_order[self.current_player_index]
+        except IndexError:
+            return False
+        return player.tg_id == cur_player_id
 
     def _check_all_bets(self) -> bool:
         return all(player.bid != 0 for player in self.players.values())
@@ -89,10 +104,10 @@ class Game:
 
     def next_player(self) -> Player | None:
         self.current_player_index += 1
-        try:
-            player = self._get_current_turn_player()
-        except IndexError:
-            return None
+        player = self._get_current_turn_player()
+
+        if player is None:
+            return player
 
         if player.result is None:
             return player
@@ -105,7 +120,7 @@ class Game:
         bid: int,
     ) -> GameResult:
         player = self._get_player_by_id(player_id)
-        if not player:
+        if player is None:
             return GameResult(
                 success=False,
                 type=ErrorType.PLAYER_NOT_FOUND,
@@ -133,6 +148,22 @@ class Game:
         player_id: int,
     ) -> GameResult:
         player = self._get_player_by_id(player_id)
+        if player is None:
+            return GameResult(
+                success=False,
+                type=ErrorType.PLAYER_NOT_FOUND,
+                message=ErrorMessages.get(
+                    ErrorType.PLAYER_NOT_FOUND,
+                    player_id=player_id,
+                ),
+            )
+
+        if not self._check_is_player_turn(player=player):
+            return GameResult(
+                success=False,
+                type=ErrorType.ANOTHER_PLAYER_TURN,
+            )
+
         player.cards.append(self.deck.pop())
 
         # Обработка случая перебора
@@ -159,4 +190,32 @@ class Game:
         return self._create_game_result_with_player(
             success_type=SuccessType.HIT_ACCEPTED,
             player=player,
+        )
+
+    def player_stand(
+        self,
+        player_id: int,
+    ) -> GameResult:
+        player = self._get_player_by_id(player_id)
+        if player is None:
+            return GameResult(
+                success=False,
+                type=ErrorType.PLAYER_NOT_FOUND,
+                message=ErrorMessages.get(
+                    ErrorType.PLAYER_NOT_FOUND,
+                    player_id=player_id,
+                ),
+            )
+
+        if not self._check_is_player_turn(player=player):
+            return GameResult(
+                success=False,
+                type=ErrorType.ANOTHER_PLAYER_TURN,
+            )
+
+        next_player = self.next_player()
+        return self._create_game_result_with_player(
+            success_type=SuccessType.STAND_ACCEPTED,
+            player=player,
+            next_player=next_player if next_player else None,
         )

@@ -93,7 +93,33 @@ class GameServiceTG:
 
         game = Game.from_dto(game_schema)
         res = game.player_hit(player_id=user_tg_id)
+        if not res.success:
+            return res
+
         await self.game_repo.cache_game(game)
+        if res.data.get("next_player") is None:
+            # TODO: ивент воркеру на ход дилера в таком то чате.
+            return res
+
+        return res
+
+    async def player_turn_stand(
+        self,
+        chat_id: int,
+        user_tg_id: int,
+    ):
+        game_schema = await self.game_repo.get_game(chat_id=chat_id)
+        if not game_schema:
+            logger.debug("Игра в чате с айди chat_id=%s не была найдена", chat_id)
+            return None
+
+        game = Game.from_dto(game_schema)
+        res = game.player_stand(player_id=user_tg_id)
+        if not res.success:
+            return res
+
+        await self.game_repo.cache_game(game)
+
         if res.data.get("next_player") is None:
             # TODO: ивент воркеру на ход дилера в таком то чате.
             return res

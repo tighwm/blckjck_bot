@@ -5,6 +5,7 @@ from typing import Any
 
 class ErrorType(Enum):
     PLAYER_NOT_FOUND = "player_not_found"
+    ANOTHER_PLAYER_TURN = "another_player_turn"
 
 
 class SuccessType(Enum):
@@ -14,6 +15,8 @@ class SuccessType(Enum):
     HIT_ACCEPTED = "hit_accepted"
     HIT_BUSTED = "hit_busted"
     HIT_BLACKJACK = "hit_blackjack"
+
+    STAND_ACCEPTED = "stand_accepted"
 
 
 @dataclass
