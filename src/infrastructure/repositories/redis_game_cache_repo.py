@@ -46,5 +46,11 @@ class RedisGameCacheRepo(CacheGameRepoInterface):
         return game_schema
 
     async def delete_cache_game(self, chat_id: int) -> None:
+        fsm_key = f"fsm:{chat_id}:{chat_id}:state"
+        await self.redis.delete(fsm_key)
         key = self._get_key(chat_id)
         await self.redis.delete(key)
+
+    async def set_game_state(self, chat_id: int):
+        fsm_key = f"fsm:{chat_id}:{chat_id}:state"
+        await self.redis.set(name=fsm_key, value="ChatState:game")

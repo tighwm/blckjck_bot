@@ -1,3 +1,5 @@
+import asyncio
+
 from aiogram import Router, F
 from aiogram.types import CallbackQuery
 
@@ -74,9 +76,20 @@ async def hit_handler(
         return
 
     next_player_text = f"Ход игрока {next_player.get("player_name")}"
-    await callback.message.answer(
+    next_player_id = next_player.get("player_id")
+    msg = await callback.message.answer(
         text=next_player_text,
-        reply_markup=game_btns(player_id=next_player.get("player_id")),
+        reply_markup=game_btns(player_id=next_player_id),
+    )
+
+    task = asyncio.create_task(game_service.turn_timer(message=msg))
+    timer_key = game_service._get_turn_timer_key(
+        chat_id=msg.chat.id,
+        user_id=next_player_id,
+    )
+    GameServiceTG.save_timer_task(
+        key=timer_key,
+        task=task,
     )
 
 
@@ -112,7 +125,18 @@ async def hit_handler(
         return
 
     next_player_text = f"Ход игрока {next_player.get("player_name")}"
-    await callback.message.answer(
+    next_player_id = next_player.get("player_id")
+    msg = await callback.message.answer(
         text=next_player_text,
-        reply_markup=game_btns(player_id=next_player.get("player_id")),
+        reply_markup=game_btns(player_id=next_player_id),
+    )
+
+    task = asyncio.create_task(game_service.turn_timer(message=msg))
+    timer_key = game_service._get_turn_timer_key(
+        chat_id=msg.chat.id,
+        user_id=next_player_id,
+    )
+    GameServiceTG.save_timer_task(
+        key=timer_key,
+        task=task,
     )

@@ -49,13 +49,6 @@ class Game:
             # turn_order=data.turn_order,
         )
 
-    def _get_current_turn_player(self):
-        try:
-            player = self.players.get(self.turn_order[self.current_player_index])
-        except IndexError:
-            return None
-        return player
-
     def _get_player_by_id(
         self,
         player_id: int,
@@ -102,12 +95,19 @@ class Game:
             data["next_player"] = self._get_player_data(next_player)
         return GameResult(success=success, type=success_type, data=data)
 
+    def get_current_turn_player(self):
+        try:
+            player = self.players.get(self.turn_order[self.current_player_index])
+        except IndexError:
+            return None
+        return player
+
     def next_player(self) -> Player | None:
         self.current_player_index += 1
-        player = self._get_current_turn_player()
+        player = self.get_current_turn_player()
 
         if player is None:
-            return player
+            return None
 
         if player.result is None:
             return player
@@ -132,7 +132,7 @@ class Game:
 
         player.bid = bid
         if self._check_all_bets():
-            cur_player = self._get_current_turn_player()
+            cur_player = self.get_current_turn_player()
             return self._create_game_result_with_player(
                 success_type=SuccessType.ALL_PLAYERS_BET,
                 player=cur_player,

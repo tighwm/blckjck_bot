@@ -49,8 +49,19 @@ class EventWorkersTG:
 
             lobby_schema = LobbySchema.model_validate_json(lobby_json_str)
             message = Message.model_validate_json(message_json_str)
-            game_schema = await self.game_service.create_game(
+            await self.game_service.create_game(
                 lobby_schema=lobby_schema,
             )
-            await message.answer(text="Делайте ставки к началу игры.").as_(self.bot)
+            msg = await message.answer(text="Делайте ставки к началу игры.").as_(
+                self.bot
+            )
+            # Создаем таску таймера, что бы не застрять
+            #  из за афк игроков на этапе ставок
+            task = asyncio.create_task(
+                self.game_service.bid_timer(message=msg),
+            )
+            GameServiceTG.save_timer_task(
+                key=str(message.chat.id),
+                task=task,
+            )
             await self.redis.xdel(stream_name, msg_id)

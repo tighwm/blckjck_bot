@@ -83,7 +83,6 @@ async def handle_start_game(
         ),
     )
     LobbyServiceTG.save_timer(
-        chat_id=chat_id,
         message=msg,
         task=task,
     )
