@@ -41,11 +41,10 @@ class LobbyServiceTG:
     @classmethod
     def save_timer(
         cls,
-        chat_id: int,
         message: Message,
         task: asyncio.Task,
     ):
-        cls.timer_tasks[chat_id] = {"task": task, "message": message}
+        cls.timer_tasks[message.chat.id] = {"task": task, "message": message}
 
     async def lobby_timer(
         self,
@@ -65,66 +64,71 @@ class LobbyServiceTG:
             )
             await message.edit_text(text=text)
 
-        await self.lobby_repo.push_starting(
-            chat_id=lobby_schema.chat_id,
-            message=message,
-        )
-        LobbyServiceTG.timer_tasks.pop(lobby_schema.chat_id)
-        await message.delete()
-        await state.set_state(ChatState.bid)
-        await self.lobby_repo.delete_lobby(lobby_schema.chat_id)
+        chat_id = lobby_schema.chat_id
+        async with self.lobby_repo.with_lock(chat_id):
+            await self.lobby_repo.push_starting(
+                chat_id=chat_id,
+                message=message,
+            )
+            LobbyServiceTG.timer_tasks.pop(chat_id)
+            await message.delete()
+            await state.set_state(ChatState.bid)
+            await self.lobby_repo.delete_lobby(chat_id)
 
     async def create_lobby(
         self,
         chat_id: int,
         user_id: int,
     ) -> LobbySchema:
-        lobby_schema = await self.lobby_repo.get_lobby(chat_id=chat_id)
-        if lobby_schema:
-            return None
+        async with self.lobby_repo.with_lock(chat_id):
+            lobby_schema = await self.lobby_repo.get_lobby(chat_id=chat_id)
+            if lobby_schema:
+                return None
 
-        user_schema = await self.user_repo.get_user_by_tg_id(tg_id=user_id)
-        user = User.from_dto(user_schema)
-        lobby = Lobby(chat_id=chat_id, users=[user])
-        return await self.lobby_repo.cache_lobby(lobby=lobby)
+            user_schema = await self.user_repo.get_user_by_tg_id(tg_id=user_id)
+            user = User.from_dto(user_schema)
+            lobby = Lobby(chat_id=chat_id, users=[user])
+            return await self.lobby_repo.cache_lobby(lobby=lobby)
 
     async def add_user(
         self,
         chat_id: int,
         user_id: int,
     ) -> LobbySchema:
-        lobby_schema = await self.lobby_repo.get_lobby(chat_id=chat_id)
-        if not lobby_schema:
-            return None
-        if self._check_user_in_lobby(
-            user_id=user_id,
-            lobby_schema=lobby_schema,
-        ):
-            return None
+        async with self.lobby_repo.with_lock(chat_id):
+            lobby_schema = await self.lobby_repo.get_lobby(chat_id=chat_id)
+            if not lobby_schema:
+                return None
+            if self._check_user_in_lobby(
+                user_id=user_id,
+                lobby_schema=lobby_schema,
+            ):
+                return None
 
-        user = await self._get_user_entities(user_id=user_id)
-        lobby = Lobby.from_dto(lobby_schema)
-        lobby.add_user(user)
-        return await self.lobby_repo.cache_lobby(lobby=lobby)
+            user = await self._get_user_entities(user_id=user_id)
+            lobby = Lobby.from_dto(lobby_schema)
+            lobby.add_user(user)
+            return await self.lobby_repo.cache_lobby(lobby=lobby)
 
     async def remove_user(
         self,
         chat_id: int,
         user_id: int,
     ) -> LobbySchema:
-        lobby_schema = await self.lobby_repo.get_lobby(chat_id=chat_id)
-        if not lobby_schema:
-            return None
-        if not self._check_user_in_lobby(
-            user_id=user_id,
-            lobby_schema=lobby_schema,
-        ):
-            return None
+        async with self.lobby_repo.with_lock(chat_id):
+            lobby_schema = await self.lobby_repo.get_lobby(chat_id=chat_id)
+            if not lobby_schema:
+                return None
+            if not self._check_user_in_lobby(
+                user_id=user_id,
+                lobby_schema=lobby_schema,
+            ):
+                return None
 
-        user = await self._get_user_entities(user_id=user_id)
-        lobby = Lobby.from_dto(lobby_schema)
-        lobby.delete_user(user)
-        return await self.lobby_repo.cache_lobby(lobby=lobby)
+            user = await self._get_user_entities(user_id=user_id)
+            lobby = Lobby.from_dto(lobby_schema)
+            lobby.delete_user(user)
+            return await self.lobby_repo.cache_lobby(lobby=lobby)
 
     async def cancel_lobby(
         self,

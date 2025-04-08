@@ -1,5 +1,6 @@
 from redis.asyncio import Redis
 from aiogram.types import Message
+from aiogram.fsm.context import FSMContext
 
 from src.application.interfaces.cache_lobby_repo_interface import (
     CacheLobbyRepoInterface,
@@ -24,6 +25,14 @@ class RedisLobbyCacheRepo(CacheLobbyRepoInterface):
         chat_id: int,
     ):
         return f"{self.key_prefix}:{chat_id}"
+
+    def with_lock(self, chat_id: int):
+        """Возвращает объект блокировки для использования в контекстном менеджере"""
+        return self.redis.lock(
+            f"lobby-lock:{chat_id}",
+            timeout=3,
+            blocking_timeout=5,
+        )
 
     async def cache_lobby(
         self,
