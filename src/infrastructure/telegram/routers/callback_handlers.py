@@ -82,15 +82,7 @@ async def hit_handler(
         reply_markup=game_btns(player_id=next_player_id),
     )
 
-    task = asyncio.create_task(game_service.turn_timer(message=msg))
-    timer_key = game_service._get_turn_timer_key(
-        chat_id=msg.chat.id,
-        user_id=next_player_id,
-    )
-    GameServiceTG.save_timer_task(
-        key=timer_key,
-        task=task,
-    )
+    game_service.set_turn_timer(message=msg, player_id=next_player_id)
 
 
 @router.callback_query(
@@ -99,7 +91,7 @@ async def hit_handler(
     PlayerFilter(1),
     flags={"rate_limit": 0.5},
 )
-async def hit_handler(
+async def stand_handler(
     callback: CallbackQuery,
     game_service: GameServiceTG,
 ):
@@ -131,12 +123,4 @@ async def hit_handler(
         reply_markup=game_btns(player_id=next_player_id),
     )
 
-    task = asyncio.create_task(game_service.turn_timer(message=msg))
-    timer_key = game_service._get_turn_timer_key(
-        chat_id=msg.chat.id,
-        user_id=next_player_id,
-    )
-    GameServiceTG.save_timer_task(
-        key=timer_key,
-        task=task,
-    )
+    game_service.set_turn_timer(message=msg, player_id=next_player_id)

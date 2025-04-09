@@ -55,7 +55,7 @@ class GameServiceTG:
         task.cancel()
         del data
 
-    async def turn_timer(
+    async def _turn_timer(
         self,
         message: Message,
     ):
@@ -88,7 +88,7 @@ class GameServiceTG:
             text=f"Ход игрока {next_player.username}",
             reply_markup=game_btns(player_id=next_player.tg_id),
         )
-        task = asyncio.create_task(self.turn_timer(message=msg))
+        task = asyncio.create_task(self._turn_timer(message=msg))
         GameServiceTG.timer_tasks.pop(player.tg_id)
         next_player_turn_key = self._get_turn_timer_key(
             chat_id=msg.chat.id,
@@ -99,6 +99,30 @@ class GameServiceTG:
             task=task,
         )
         await self.game_repo.cache_game(game)
+
+    def set_turn_timer(
+        self,
+        message: Message,
+        player_id: int,
+    ):
+        """
+        Установить таймер на ход игроку
+
+        Args:
+            message (Message): Сообщение айограм
+            player_id (int): Айди игрока
+
+        Returns:
+        """
+        task = asyncio.create_task(self._turn_timer(message=message))
+        timer_key = self._get_turn_timer_key(
+            chat_id=message.chat.id,
+            user_id=player_id,
+        )
+        GameServiceTG.save_timer_task(
+            key=timer_key,
+            task=task,
+        )
 
     async def bid_timer(
         self,
@@ -143,7 +167,7 @@ class GameServiceTG:
             text=f"Ход игрока {cur_player.username}",
             reply_markup=game_btns(player_id=cur_player.tg_id),
         )
-        task = asyncio.create_task(self.turn_timer(message=msg))
+        task = asyncio.create_task(self._turn_timer(message=msg))
         GameServiceTG.save_timer_task(
             key=self._get_turn_timer_key(
                 chat_id=msg.chat.id,
@@ -239,14 +263,23 @@ class GameServiceTG:
             partial=True,
         )
         await self.game_repo.cache_game(game)
-        logger.debug("Ставка принята.")
         return res
 
     async def player_turn_hit(
         self,
         chat_id: int,
         user_tg_id: int,
-    ):
+    ) -> GameResult:
+        """
+        Метод обработки hit действия игрока
+
+        Args:
+            chat_id (int): Чат в котором происходит игра
+            user_tg_id (int): Телеграм айди игрока
+
+        Returns:
+            GameResult: Обьект результата
+        """
         GameServiceTG.cancel_turn_timer(id=user_tg_id)
 
         game_schema = await self.game_repo.get_game(chat_id=chat_id)
@@ -271,6 +304,16 @@ class GameServiceTG:
         chat_id: int,
         user_tg_id: int,
     ):
+        """
+        Метод обработки stand действия игрока
+
+        Args:
+            chat_id (int): Чат в котором происходит игра
+            user_tg_id (int): Телеграм айди игрока
+
+        Returns:
+            GameResult: Обьект результата
+        """
         GameServiceTG.cancel_turn_timer(id=user_tg_id)
 
         game_schema = await self.game_repo.get_game(chat_id=chat_id)
@@ -290,3 +333,6 @@ class GameServiceTG:
             return res
 
         return res
+
+    async def dealer_hit(self, chat_id: int) -> GameResult:
+        pass
