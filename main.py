@@ -9,7 +9,7 @@ from aiogram.client.default import DefaultBotProperties
 from src.infrastructure.config import settings
 from src.infrastructure.telegram.bot import AiogramBot
 from src.infrastructure.telegram.routers import routers
-from src.infrastructure.redis_py.events.events_workerTG import EventWorkersTG
+from src.infrastructure.redis_py.events.event_system import EventSystemTG
 from src.infrastructure.redis_py.client import RedisSingleton
 from src.infrastructure.repositories import RedisGameCacheRepo
 from src.application.services import GameServiceTG
@@ -27,25 +27,17 @@ aiogrambot = AiogramBot(
     storage=fsm_redis_storage,
 )
 
-
-def setup_game_workers():
-    redis_ton = RedisSingleton()
-    game_repo = RedisGameCacheRepo(redis=redis_ton)
-    game_service = GameServiceTG(game_repo=game_repo)
-    return EventWorkersTG(
-        bot=aiogrambot.bot,
-        game_service=game_service,
-        redis=redis_ton,
-    )
-
-
-game_workers = setup_game_workers()
+tg_event_sys = EventSystemTG(
+    bot=aiogrambot.bot,
+    game_service=GameServiceTG(game_repo=RedisGameCacheRepo(redis=RedisSingleton())),
+    redis=RedisSingleton(),
+)
 
 
 async def main():
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
     aiogrambot.dp.include_router(routers)
-    tasks = await game_workers.start_workers()
+    event_sys_task = asyncio.create_task(tg_event_sys.start())
     await asyncio.sleep(1)
     await aiogrambot.start_polling()
 
