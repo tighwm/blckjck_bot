@@ -77,20 +77,14 @@ class RedisLobbyCacheRepo(CacheLobbyRepoInterface):
 
 
 class RedisLobbyCacheRepoTG(RedisLobbyCacheRepo):
-    async def push_starting(
-        self,
-        chat_id: int,
-        message: Message,
-    ):
+    async def push_starting(self, chat_id: int):
         key = self._get_key(chat_id)
         data = await self.redis.get(key)
         if not data:
             return None
 
-        await self.redis.xadd(
-            name=self.stream_key,
-            fields={
-                "lobby_data": data,
-                "message": message.model_dump_json(),
-            },
-        )
+        await self.redis.xadd(name=self.stream_key, fields={"lobby_data": data})
+
+    async def set_bid_state(self, chat_id: int):
+        fsm_key = f"fsm:{chat_id}:{chat_id}:state"
+        await self.redis.set(name=fsm_key, value="ChatState:bid")

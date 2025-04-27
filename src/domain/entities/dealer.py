@@ -10,6 +10,8 @@ if TYPE_CHECKING:
 @dataclass
 class Dealer:
     cards: list[Card] = field(default_factory=list)
+    first_card: Card | None = None
+    secret_card: Card | None = None
 
     def _calculate_score(self) -> int:
         if not self.cards:
@@ -28,12 +30,6 @@ class Dealer:
     def score(self):
         return self._calculate_score()
 
-    def has_blackjack(self) -> bool:
-        return len(self.cards) == 2 and self.score == 21
-
-    def is_busted(self) -> bool:
-        return self.score > 21
-
     def cards_str(self) -> str:
         if not self.cards:
             return "Нет карт"
@@ -43,4 +39,6 @@ class Dealer:
     def from_dto(cls, data: "DealerSchema") -> "Dealer":
         return cls(
             cards=[Card.from_dto(card_schema) for card_schema in data.cards],
+            first_card=Card.from_dto(data.first_card),
+            secret_card=Card.from_dto(data.secret_card),
         )

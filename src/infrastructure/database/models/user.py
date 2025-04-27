@@ -24,3 +24,8 @@ class User(Base):
         default=100,
         server_default="100",
     )
+
+    def __repr__(self):
+        return (
+            f"User username={self.username}, tg_id={self.tg_id}, balance={self.balance}"
+        )

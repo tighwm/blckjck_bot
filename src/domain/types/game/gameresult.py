@@ -18,6 +18,10 @@ class SuccessType(Enum):
 
     STAND_ACCEPTED = "stand_accepted"
 
+    DEALER_HIT = "dealer_hit"
+    DEALER_BLACKJACK = "dealer_blackjack"
+    DEALER_BUSTED = "dealer_busted"
+
 
 @dataclass
 class GameResult:

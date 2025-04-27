@@ -12,6 +12,7 @@ from src.infrastructure.telegram.middlewares import (
     GameServiceGetter,
 )
 from src.application.services import LobbyServiceTG, GameServiceTG
+from src.application.services.timer_mng import timer_manager
 from src.infrastructure.telegram.routers.states import ChatState
 from src.domain.types.game import SuccessType, ErrorType
 from src.infrastructure.telegram.routers.utils import game_btns
@@ -73,18 +74,17 @@ async def handle_start_game(
     text = (
         f"Возможно игра началась я ебу что ли\n"
         f"Игроки: {lobby.str_users()}\n"
-        f"Таймер: 80"
+        f"Таймер: 15"
     )
     msg = await message.answer(text=text)
-    task = asyncio.create_task(
-        lobby_service.lobby_timer(
-            message=msg,
-            state=state,
-        ),
-    )
-    LobbyServiceTG.save_timer(
-        message=msg,
-        task=task,
+    timer_manager.create_interval_timer(
+        "lobby:interval",
+        chat_id,
+        lobby_service.lobby_interval_timer,
+        None,
+        15,
+        5,
+        msg,
     )
 
 
@@ -117,6 +117,7 @@ async def handle_cancel(
         await message.answer("Начни игру для начала долбоеб.")
         return
     await message.answer("Набор на игру отменен.")
+    timer_manager.cancel_timer(timer_type="lobby:interval", chat_id=message.chat.id)
 
 
 # Регулярное выражение для фильтрации ставок от 1 и без чувствительности к регистру
@@ -148,7 +149,29 @@ async def bid_handle(
     if response.type == SuccessType.ALL_PLAYERS_BET:
         await state.set_state(ChatState.game)
         player = response.data.get("player")
-        await message.answer(
-            text=f"Ход игрока {player.get("player_name")}",
-            reply_markup=game_btns(player.get("player_id")),
+        player_id = player.get("player_id")
+        dealer = response.data.get("dealer")
+        dealer_text = (
+            f"Карты дилера\n"
+            f"Первая: {dealer.get("first_card")}\n"
+            f"Вторая: ***\n"
+            f"Очки: {dealer.get("score")}"
         )
+        await message.answer(text=dealer_text)
+        msg = await message.answer(
+            text=f"Ход игрока {player.get("player_name")}",
+            reply_markup=game_btns(player_id),
+        )
+        timer_manager.create_timer(
+            "game:turn",
+            msg.chat.id,
+            game_service.kick_afk,
+            player_id,
+            30,
+            msg,
+        )
+
+
+@router.message(Command("start"))
+async def handle_start(message: Message):
+    await message.answer("Да живой я блять.")

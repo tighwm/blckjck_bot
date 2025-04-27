@@ -1,18 +1,15 @@
 import asyncio
 
 from aiogram.types import Message
-from aiogram.fsm.context import FSMContext
 
 from src.application.interfaces import TelegramUserRepoMixin
 from src.application.schemas import LobbySchema
+from src.application.services.timer_mng import timer_manager
 from src.infrastructure.repositories import RedisLobbyCacheRepoTG
-from src.infrastructure.telegram.routers.states import ChatState
 from src.domain.entities import Lobby, User
 
 
 class LobbyServiceTG:
-    timer_tasks: dict[int, dict[str, asyncio.Task | Message]] = {}
-
     def __init__(
         self,
         lobby_repo: RedisLobbyCacheRepoTG,
@@ -38,42 +35,25 @@ class LobbyServiceTG:
         user_schema = await self.user_repo.get_user_by_tg_id(tg_id=user_id)
         return User.from_dto(user_schema)
 
-    @classmethod
-    def save_timer(
-        cls,
-        message: Message,
-        task: asyncio.Task,
-    ):
-        cls.timer_tasks[message.chat.id] = {"task": task, "message": message}
+    async def _lobby_timer(self, chat_id: int):
+        async with self.lobby_repo.with_lock(chat_id):
+            await self.lobby_repo.push_starting(chat_id=chat_id)
+            await self.lobby_repo.delete_lobby(chat_id)
+            await self.lobby_repo.set_bid_state(chat_id)
 
-    async def lobby_timer(
+    async def lobby_interval_timer(
         self,
         message: Message,
-        state: FSMContext,
-        timer_out: int = 15,
+        remaining_time: int,
     ):
-        lobby_schema = None
-        while timer_out > 5:
-            await asyncio.sleep(5)
-            timer_out -= 5
-            lobby_schema = await self.lobby_repo.get_lobby(message.chat.id)
-            text = (
-                f"Возможно набор на игру начался, я ебу что ли\n"
-                f"Игроки: {lobby_schema.str_users()}\n"
-                f"Таймер: {timer_out}"
-            )
-            await message.edit_text(text=text)
-
-        chat_id = lobby_schema.chat_id
-        async with self.lobby_repo.with_lock(chat_id):
-            await self.lobby_repo.push_starting(
-                chat_id=chat_id,
-                message=message,
-            )
-            LobbyServiceTG.timer_tasks.pop(chat_id)
-            await message.delete()
-            await state.set_state(ChatState.bid)
-            await self.lobby_repo.delete_lobby(chat_id)
+        chat_id = message.chat.id
+        lobby_schema = await self.lobby_repo.get_lobby(chat_id)
+        text = (
+            f"Возможно игра началась я ебу что ли\n"
+            f"Игроки: {lobby_schema.str_users()}\n"
+            f"Таймер: {remaining_time}"
+        )
+        await message.edit_text(text)
 
     async def create_lobby(
         self,
@@ -88,6 +68,14 @@ class LobbyServiceTG:
             user_schema = await self.user_repo.get_user_by_tg_id(tg_id=user_id)
             user = User.from_dto(user_schema)
             lobby = Lobby(chat_id=chat_id, users=[user])
+            timer_manager.create_timer(
+                "lobby",
+                chat_id,
+                self._lobby_timer,
+                None,
+                15,
+                chat_id,
+            )
             return await self.lobby_repo.cache_lobby(lobby=lobby)
 
     async def add_user(
@@ -138,9 +126,10 @@ class LobbyServiceTG:
         if not res:
             return False
 
+        timer_manager.cancel_timer(
+            "lobby",
+            chat_id,
+            None,
+        )
         await self.lobby_repo.delete_lobby(chat_id=chat_id)
-        timer_task = LobbyServiceTG.timer_tasks.pop(chat_id)
-        if timer_task:
-            timer_task["task"].cancel()
-            await timer_task["message"].delete()
         return True

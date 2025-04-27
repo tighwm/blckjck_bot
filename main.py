@@ -11,8 +11,6 @@ from src.infrastructure.telegram.bot import AiogramBot
 from src.infrastructure.telegram.routers import routers
 from src.infrastructure.redis_py.events.event_system import EventSystemTG
 from src.infrastructure.redis_py.client import RedisSingleton
-from src.infrastructure.repositories import RedisGameCacheRepo
-from src.application.services import GameServiceTG
 from src.utils.logger import setup_logger
 
 logger = setup_logger(name=__name__, level=logging.INFO)
@@ -29,7 +27,6 @@ aiogrambot = AiogramBot(
 
 tg_event_sys = EventSystemTG(
     bot=aiogrambot.bot,
-    game_service=GameServiceTG(game_repo=RedisGameCacheRepo(redis=RedisSingleton())),
     redis=RedisSingleton(),
 )
 

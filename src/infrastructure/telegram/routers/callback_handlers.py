@@ -10,11 +10,13 @@ from src.infrastructure.telegram.middlewares import (
 )
 from src.infrastructure.telegram.routers.states import ChatState
 from src.application.services import GameServiceTG
+from src.application.services.timer_mng import timer_manager
 from src.infrastructure.telegram.routers.utils import (
     PlayerFilter,
     HitData,
     StandData,
     game_btns,
+    format_player_info,
 )
 from src.domain.types.game import SuccessType, ErrorType
 
@@ -22,17 +24,6 @@ router = Router()
 router.callback_query.middleware(AntiFlood())
 router.callback_query.middleware(SaveUserDB())
 router.callback_query.middleware(GameServiceGetter())
-
-
-def format_player_info(
-    player_data: dict,
-    additionally: str | None = None,
-) -> str:
-    return (
-        f"У игрока {player_data.get('player_name')} {additionally if additionally else ""}\n"
-        f"Карты: {player_data.get('cards')}\n"
-        f"Очки: {player_data.get('score')}"
-    )
 
 
 @router.callback_query(
@@ -45,8 +36,9 @@ async def hit_handler(
     callback: CallbackQuery,
     game_service: GameServiceTG,
 ):
+    chat_id = callback.message.chat.id
     response = await game_service.player_turn_hit(
-        chat_id=callback.message.chat.id,
+        chat_id=chat_id,
         user_tg_id=callback.from_user.id,
     )
 
@@ -61,10 +53,20 @@ async def hit_handler(
     next_player = response.data.get("next_player")
 
     if response.type == SuccessType.HIT_ACCEPTED:
+        player_id = player.get("player_id")
         await callback.message.edit_text(
             text=format_player_info(player),
-            reply_markup=game_btns(player_id=player.get("player_id")),
+            reply_markup=game_btns(player_id=player_id),
         )
+        timer_manager.create_timer(
+            "game:turn",
+            chat_id,
+            game_service.kick_afk,
+            player_id,
+            30,
+            callback.message,
+        )
+
         return
     elif response.type == SuccessType.HIT_BLACKJACK:
         await callback.message.edit_text(text=format_player_info(player, "блекджек."))
@@ -72,7 +74,6 @@ async def hit_handler(
         await callback.message.edit_text(text=format_player_info(player, "перебор."))
 
     if next_player is None:
-        await callback.message.answer("Дилер учится делать ход.")
         return
 
     next_player_text = f"Ход игрока {next_player.get("player_name")}"
@@ -81,8 +82,14 @@ async def hit_handler(
         text=next_player_text,
         reply_markup=game_btns(player_id=next_player_id),
     )
-
-    game_service.set_turn_timer(message=msg, player_id=next_player_id)
+    timer_manager.create_timer(
+        "game:turn",
+        chat_id,
+        game_service.kick_afk,
+        next_player_id,
+        30,
+        msg,
+    )
 
 
 @router.callback_query(
@@ -111,9 +118,7 @@ async def stand_handler(
     await callback.message.answer(f"Игрок {player.get("player_name")} воздержался😂😂")
 
     next_player = response.data.get("next_player")
-
     if next_player is None:
-        await callback.message.answer("Дилер учится делать ход.")
         return
 
     next_player_text = f"Ход игрока {next_player.get("player_name")}"
@@ -122,5 +127,11 @@ async def stand_handler(
         text=next_player_text,
         reply_markup=game_btns(player_id=next_player_id),
     )
-
-    game_service.set_turn_timer(message=msg, player_id=next_player_id)
+    timer_manager.create_timer(
+        "game:turn",
+        msg.chat.id,
+        game_service.kick_afk,
+        next_player_id,
+        30,
+        msg,
+    )

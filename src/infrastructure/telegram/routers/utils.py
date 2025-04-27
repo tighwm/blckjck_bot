@@ -34,3 +34,14 @@ class PlayerFilter(Filter):
         if cur_player_id != callback.from_user.id:
             return False
         return True
+
+
+def format_player_info(
+    player_data: dict,
+    additionally: str | None = None,
+) -> str:
+    return (
+        f"У игрока {player_data.get('player_name')} {additionally if additionally else ""}\n"
+        f"Карты: {player_data.get('cards')}\n"
+        f"Очки: {player_data.get('score')}"
+    )

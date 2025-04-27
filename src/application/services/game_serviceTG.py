@@ -1,10 +1,10 @@
 import logging
-import asyncio
 from typing import Any
 
 from aiogram.types import Message
 
 from src.application.schemas import GameSchema, LobbySchema, UserPartial
+from src.application.services.timer_mng import timer_manager
 from src.infrastructure.repositories import RedisGameCacheRepo, SQLAlchemyUserRepository
 from src.domain.entities import Lobby, Game, Player, PlayerResult
 from src.domain.types.game import SuccessType, GameResult
@@ -13,9 +13,22 @@ from src.infrastructure.telegram.routers.utils import game_btns
 logger = logging.getLogger(__name__)
 
 
-class GameServiceTG:
-    timer_tasks: dict[str, dict[str, Any]] = {}
+async def update_users_balance(
+    user_repo: SQLAlchemyUserRepository,
+    players: list[dict],
+):
+    if not players:
+        return
+    amounts = {player["player_id"]: player.get("amount") for player in players}
+    users_list = await user_repo.get_users_by_tg_ids(tg_ids=list(amounts.keys()))
+    users_update = {}
+    for user in users_list:
+        amount = amounts.get(user.tg_id)
+        users_update[user] = UserPartial(balance=user.balance + amount)
+    await user_repo.update_users(datas_update=users_update, partial=True)
 
+
+class GameServiceTG:
     def __init__(
         self,
         game_repo: RedisGameCacheRepo,
@@ -24,52 +37,11 @@ class GameServiceTG:
         self.game_repo = game_repo
         self.user_repo = user_repo
 
-    @staticmethod
-    def _get_turn_timer_key(
-        chat_id: int,
-        user_id: int,
-    ) -> str:
-        return str(user_id) + str(chat_id)
-
-    @classmethod
-    def save_timer_task(
-        cls,
-        key: str,
-        task: asyncio.Task,
-        data: dict[str, Any] = {},
-    ):
-        data["task"] = task
-        cls.timer_tasks[key] = data
-
-    @classmethod
-    def cancel_turn_timer(
-        cls,
-        id: int,
-    ):
-        try:
-            data = cls.timer_tasks.pop(id)
-        except KeyError:
-            logger.warning("KeyError таймера игрока с айди %s", id)
-            return
-        task: asyncio.Task = data.get("task")
-        task.cancel()
-        del data
-
-    async def _turn_timer(
+    async def kick_afk(
         self,
         message: Message,
     ):
-        """
-        Таймер времени данного на принятие действия игроку.
-
-        Args:
-            message (Message): Сообщение айограм
-
-        Returns:
-        """
         chat_id = message.chat.id
-        await asyncio.sleep(20)
-
         game_schema = await self.game_repo.get_game(chat_id)
         if game_schema is None:
             return
@@ -77,68 +49,25 @@ class GameServiceTG:
 
         player = game.get_current_turn_player()
         player.result = PlayerResult.OUT
-        await message.answer(f"Игрок {player.username} шпатель.")
+        await message.answer(f"Игрок {player.username} шпаклевка.")
 
         next_player = game.next_player()
         if next_player is None:
             await message.answer(f"Дилер учится делать ход.")
+            await self.game_repo.push_dealer(chat_id=chat_id)
             return
 
         msg = await message.answer(
             text=f"Ход игрока {next_player.username}",
             reply_markup=game_btns(player_id=next_player.tg_id),
         )
-        task = asyncio.create_task(self._turn_timer(message=msg))
-        GameServiceTG.timer_tasks.pop(player.tg_id)
-        next_player_turn_key = self._get_turn_timer_key(
-            chat_id=msg.chat.id,
-            user_id=next_player.tg_id,
-        )
-        GameServiceTG.save_timer_task(
-            id=next_player_turn_key,
-            task=task,
-        )
         await self.game_repo.cache_game(game)
-
-    def set_turn_timer(
-        self,
-        message: Message,
-        player_id: int,
-    ):
-        """
-        Установить таймер на ход игроку
-
-        Args:
-            message (Message): Сообщение айограм
-            player_id (int): Айди игрока
-
-        Returns:
-        """
-        task = asyncio.create_task(self._turn_timer(message=message))
-        timer_key = self._get_turn_timer_key(
-            chat_id=message.chat.id,
-            user_id=player_id,
-        )
-        GameServiceTG.save_timer_task(
-            key=timer_key,
-            task=task,
-        )
 
     async def bid_timer(
         self,
         message: Message,
     ):
-        """
-        Таймер времени данного на ставку
-
-        Args:
-            message (Message): Сообщение айограм
-
-        Returns:
-        """
         chat_id = message.chat.id
-        await asyncio.sleep(25)
-
         game_schema = await self.game_repo.get_game(chat_id)
         if game_schema is None:
             return
@@ -151,8 +80,6 @@ class GameServiceTG:
                 count_out += 1
                 player.result = PlayerResult.OUT
                 await message.answer(f"Игрок {player.username} шпатель.")
-
-        GameServiceTG.timer_tasks.pop(str(chat_id))
 
         if count_out == len(players):
             await message.answer("Все игроки шпатели.")
@@ -167,13 +94,13 @@ class GameServiceTG:
             text=f"Ход игрока {cur_player.username}",
             reply_markup=game_btns(player_id=cur_player.tg_id),
         )
-        task = asyncio.create_task(self._turn_timer(message=msg))
-        GameServiceTG.save_timer_task(
-            key=self._get_turn_timer_key(
-                chat_id=msg.chat.id,
-                user_id=cur_player.tg_id,
-            ),
-            task=task,
+        timer_manager.create_timer(
+            "game:turn",
+            chat_id,
+            self.kick_afk,
+            cur_player.tg_id,
+            30,
+            msg,
         )
         await self.game_repo.set_game_state(chat_id)
         await self.game_repo.cache_game(game)
@@ -182,15 +109,6 @@ class GameServiceTG:
         self,
         lobby_schema: LobbySchema,
     ) -> GameSchema | None:
-        """
-        Метод создания сущности игры из лобби
-
-        Args:
-            lobby_schema (LobbySchema): Пайдентик схема лобби.
-
-        Returns:
-            GameSchema: Пайдентик схема игры.
-        """
         lobby = Lobby.from_dto(lobby_schema)
         players = {
             user.tg_id: Player(username=user.username, tg_id=user.tg_id)
@@ -212,17 +130,6 @@ class GameServiceTG:
         user_tg_id: int,
         bid: int,
     ) -> GameResult:
-        """
-        Обрабатывает ставку игрока в текущей игровой сессии.
-
-        Args:
-            chat_id (int): ID Telegram-чата, где идёт игра.
-            user_tg_id (int): Telegram ID игрока.
-            bid (int): Сумма ставки, которую поставил игрок.
-
-        Returns:
-            GameResult: Обьект результата.
-        """
         game_schema = await self.game_repo.get_game(chat_id=chat_id)
         if not game_schema:
             logger.debug("Игра в чате с айди chat_id=%s не была найдена", chat_id)
@@ -251,9 +158,7 @@ class GameServiceTG:
             return res
 
         if res.type == SuccessType.ALL_PLAYERS_BET:
-            data = GameServiceTG.timer_tasks.pop(chat_id)
-            task: asyncio.Task = data["task"]
-            task.cancel()
+            timer_manager.cancel_timer(timer_type="game:bid", chat_id=chat_id)
 
         new_balance = user_model.balance - bid
         update_user = UserPartial(balance=new_balance)
@@ -270,17 +175,11 @@ class GameServiceTG:
         chat_id: int,
         user_tg_id: int,
     ) -> GameResult:
-        """
-        Метод обработки hit действия игрока
-
-        Args:
-            chat_id (int): Чат в котором происходит игра
-            user_tg_id (int): Телеграм айди игрока
-
-        Returns:
-            GameResult: Обьект результата
-        """
-        GameServiceTG.cancel_turn_timer(id=user_tg_id)
+        timer_manager.cancel_timer(
+            timer_type="game:turn",
+            chat_id=chat_id,
+            player_id=user_tg_id,
+        )
 
         game_schema = await self.game_repo.get_game(chat_id=chat_id)
         if not game_schema:
@@ -293,9 +192,11 @@ class GameServiceTG:
             return res
 
         await self.game_repo.cache_game(game)
-        if res.data.get("next_player") is None:
-            # TODO: ивент воркеру на ход дилера в таком то чате.
-            return res
+        if res.data.get("dealer_turn") == True:
+            if game.round == 1:
+                await self.game_repo.push_dealer(chat_id=chat_id, action="reveal")
+            elif game.round == 2:
+                await self.game_repo.push_dealer(chat_id=chat_id, action="turns")
 
         return res
 
@@ -304,18 +205,11 @@ class GameServiceTG:
         chat_id: int,
         user_tg_id: int,
     ):
-        """
-        Метод обработки stand действия игрока
-
-        Args:
-            chat_id (int): Чат в котором происходит игра
-            user_tg_id (int): Телеграм айди игрока
-
-        Returns:
-            GameResult: Обьект результата
-        """
-        GameServiceTG.cancel_turn_timer(id=user_tg_id)
-
+        timer_manager.cancel_timer(
+            timer_type="game:turn",
+            chat_id=chat_id,
+            player_id=user_tg_id,
+        )
         game_schema = await self.game_repo.get_game(chat_id=chat_id)
         if not game_schema:
             logger.debug("Игра в чате с айди chat_id=%s не была найдена", chat_id)
@@ -328,11 +222,60 @@ class GameServiceTG:
 
         await self.game_repo.cache_game(game)
 
-        if res.data.get("next_player") is None:
-            # TODO: ивент воркеру на ход дилера в таком то чате.
-            return res
+        if res.data.get("dealer_turn") == True:
+            if game.round == 1:
+                await self.game_repo.push_dealer(chat_id=chat_id, action="reveal")
+            elif game.round == 2:
+                await self.game_repo.push_dealer(chat_id=chat_id, action="turns")
+        return res
+
+    async def dealer_reveal_secret(
+        self,
+        chat_id: int,
+    ):
+        game_schema = await self.game_repo.get_game(chat_id=chat_id)
+        if not game_schema:
+            logger.debug("Игра в чате с айди chat_id=%s не была найдена", chat_id)
+            return None
+
+        game = Game.from_dto(game_schema)
+
+        res = game.init_second_round()
+
+        await self.game_repo.cache_game(game)
 
         return res
 
-    async def dealer_hit(self, chat_id: int) -> GameResult:
-        pass
+    async def dealer_turns(self, chat_id: int):
+        game_schema = await self.game_repo.get_game(chat_id=chat_id)
+        if not game_schema:
+            logger.debug("Игра в чате с айди chat_id=%s не была найдена", chat_id)
+            return None
+
+        game = Game.from_dto(game_schema)
+
+        res = game.dealer_turns()
+
+        await self.game_repo.cache_game(game)
+
+        return res
+
+    async def ending_game(self, chat_id: int):
+        game_schema = await self.game_repo.get_game(chat_id)
+        if not game_schema:
+            logger.debug("Игра в чате с айди chat_id=%s не была найдена", chat_id)
+            return None
+
+        game = Game.from_dto(game_schema)
+        res = game.result_of_game()
+        wins = res.get("wins")
+        push = res.get("tie")
+
+        players = wins + push
+        await update_users_balance(user_repo=self.user_repo, players=players)
+
+        await self.game_repo.delete_cache_game(chat_id)
+        return res
+
+
+# я обязательно доделаю..

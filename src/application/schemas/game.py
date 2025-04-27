@@ -12,3 +12,4 @@ class GameSchema(BaseModel):
     deck: list[CardSchema]
     created_at: datetime
     current_player_index: int = 0
+    round: int = 1
