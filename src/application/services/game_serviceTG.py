@@ -269,7 +269,7 @@ class GameServiceTG:
         game = Game.from_dto(game_schema)
         res = game.result_of_game()
         wins = res.get("wins")
-        push = res.get("tie")
+        push = res.get("push")
 
         players = wins + push
         await update_users_balance(user_repo=self.user_repo, players=players)

@@ -184,9 +184,10 @@ class GameEndingListener(StreamListener):
     @with_game_service(True)
     async def _result_of_end_game(self, chat_id: int, game_service: GameServiceTG):
         response = await game_service.ending_game(chat_id)
-        win_players = response.get("win")
+        win_players = response.get("wins")
         push_players = response.get("push")
         lose_players = response.get("lose")
+
         text = ""
         if win_players:
             win_player_names = [player.get("player_name") for player in win_players]
@@ -197,6 +198,7 @@ class GameEndingListener(StreamListener):
         if lose_players:
             lose_player_names = [player.get("player_name") for player in lose_players]
             text = text + f"Проиграли ставку: {', '.join(lose_player_names)}"
+
         await self.bot.send_message(chat_id=chat_id, text=text)
 
 

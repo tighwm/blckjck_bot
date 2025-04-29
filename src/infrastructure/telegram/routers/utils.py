@@ -1,3 +1,5 @@
+from typing import Any
+
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery
 from aiogram.filters import Filter
 from aiogram.filters.callback_data import CallbackData
@@ -44,4 +46,11 @@ def format_player_info(
         f"У игрока {player_data.get('player_name')} {additionally if additionally else ""}\n"
         f"Карты: {player_data.get('cards')}\n"
         f"Очки: {player_data.get('score')}"
+    )
+
+
+def format_user_profile(user_data: dict[str, Any]) -> str:
+    return (
+        f"Профиль юзера {user_data.get("username")}\n"
+        f"Баланс: {user_data.get("balance")}"
     )
