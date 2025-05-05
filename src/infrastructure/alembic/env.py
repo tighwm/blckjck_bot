@@ -20,8 +20,8 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-from src.infrastructure.database import Base
-from src.infrastructure.config import settings
+from infrastructure.database import Base
+from infrastructure.config import settings
 
 target_metadata = Base.metadata
 

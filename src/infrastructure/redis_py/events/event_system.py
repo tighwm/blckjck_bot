@@ -5,15 +5,14 @@ from contextlib import asynccontextmanager
 
 from redis.asyncio import Redis
 from aiogram import Bot
-from aiogram.types import Message
 
-from src.application.services import GameServiceTG
-from src.application.services.timer_mng import timer_manager
-from src.application.schemas import LobbySchema
-from src.infrastructure.telegram.routers.utils import game_btns, format_player_info
-from src.infrastructure.database.models.db_helper import db_helper
-from src.infrastructure.repositories import RedisGameCacheRepo, SQLAlchemyUserRepository
-from src.infrastructure.redis_py.client import RedisSingleton
+from application.services import GameServiceTG
+from application.services.timer_mng import timer_manager
+from application.schemas import LobbySchema
+from infrastructure.telegram.routers.utils import game_btns, format_player_info
+from infrastructure.database.models.db_helper import db_helper
+from infrastructure.repositories import RedisGameCacheRepo, SQLAlchemyUserRepository
+from infrastructure.redis_py.client import RedisSingleton
 
 T = TypeVar("T")
 TaskFunc = Callable[..., Coroutine[Any, Any, T]]

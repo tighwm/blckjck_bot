@@ -2,7 +2,7 @@ from enum import Enum
 from typing import TYPE_CHECKING
 from dataclasses import dataclass, field
 
-from src.domain.entities import Card
+from domain.entities import Card
 
 if TYPE_CHECKING:
     from src.application.schemas import PlayerSchema

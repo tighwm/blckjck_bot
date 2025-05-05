@@ -2,12 +2,12 @@ from aiogram import Router, F
 from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 
-from src.application.services import GameServiceTG
-from src.application.services.timer_mng import timer_manager
-from src.domain.types.game import SuccessType
-from src.infrastructure.telegram.routers.states import ChatState
-from src.infrastructure.telegram.routers.utils import game_btns
-from src.infrastructure.telegram.middlewares import GameServiceGetter, AntiFlood
+from application.services import GameServiceTG
+from application.services.timer_mng import timer_manager
+from domain.types.game import SuccessType
+from infrastructure.telegram.routers.states import ChatState
+from infrastructure.telegram.routers.utils import game_btns
+from infrastructure.telegram.middlewares import GameServiceGetter, AntiFlood
 
 
 router = Router()

@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
-from src.domain.entities import Card
+from domain.entities import Card
 
 if TYPE_CHECKING:
     from src.application.schemas import DealerSchema

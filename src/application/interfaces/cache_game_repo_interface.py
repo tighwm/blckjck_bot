@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
-from src.domain.entities.game import Game
-from src.application.schemas.game import GameSchema
+from domain.entities.game import Game
+from application.schemas.game import GameSchema
 
 
 class CacheGameRepoInterface(ABC):

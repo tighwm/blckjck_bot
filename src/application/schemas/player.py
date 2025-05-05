@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
-from src.application.schemas import CardSchema
-from src.domain.entities import PlayerResult
+from application.schemas import CardSchema
+from domain.entities import PlayerResult
 
 
 class PlayerSchema(BaseModel):

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from src.domain.entities import User
+from domain.entities import User
 
 if TYPE_CHECKING:
     from src.application.schemas import LobbySchema

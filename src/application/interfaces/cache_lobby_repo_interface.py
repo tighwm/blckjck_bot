@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
-from src.domain.entities import Lobby
-from src.application.schemas import LobbySchema
+from domain.entities import Lobby
+from application.schemas import LobbySchema
 
 
 class CacheLobbyRepoInterface(ABC):

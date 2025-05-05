@@ -1,7 +1,7 @@
 from dataclasses import asdict
 
-from src.infrastructure.repositories import SQLAlchemyUserRepository
-from src.domain.entities import User
+from infrastructure.repositories import SQLAlchemyUserRepository
+from domain.entities import User
 
 
 class UserNotFound(Exception):

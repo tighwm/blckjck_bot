@@ -1,6 +1,6 @@
 from redis.asyncio import Redis
 
-from src.infrastructure.config import settings
+from infrastructure.config import settings
 
 
 class RedisSingleton:

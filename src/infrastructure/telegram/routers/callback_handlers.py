@@ -3,22 +3,22 @@ import asyncio
 from aiogram import Router, F
 from aiogram.types import CallbackQuery
 
-from src.infrastructure.telegram.middlewares import (
+from infrastructure.telegram.middlewares import (
     SaveUserDB,
     GameServiceGetter,
     AntiFlood,
 )
-from src.infrastructure.telegram.routers.states import ChatState
-from src.application.services import GameServiceTG
-from src.application.services.timer_mng import timer_manager
-from src.infrastructure.telegram.routers.utils import (
+from infrastructure.telegram.routers.states import ChatState
+from application.services import GameServiceTG
+from application.services.timer_mng import timer_manager
+from infrastructure.telegram.routers.utils import (
     PlayerFilter,
     HitData,
     StandData,
     game_btns,
     format_player_info,
 )
-from src.domain.types.game import SuccessType, ErrorType
+from domain.types.game import SuccessType, ErrorType
 
 router = Router()
 router.callback_query.middleware(AntiFlood())

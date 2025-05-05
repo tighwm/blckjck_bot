@@ -1,12 +1,10 @@
 from redis.asyncio import Redis
-from aiogram.types import Message
-from aiogram.fsm.context import FSMContext
 
-from src.application.interfaces.cache_lobby_repo_interface import (
+from application.interfaces.cache_lobby_repo_interface import (
     CacheLobbyRepoInterface,
 )
-from src.domain.entities.lobby import Lobby
-from src.application.schemas.lobby import LobbySchema
+from domain.entities.lobby import Lobby
+from application.schemas.lobby import LobbySchema
 
 
 class RedisLobbyCacheRepo(CacheLobbyRepoInterface):

@@ -1,11 +1,11 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.application.interfaces.users_repo_interface import (
+from application.interfaces.users_repo_interface import (
     TelegramUserRepoMixin,
 )
-from src.application.schemas.user import UserSchema, UserPartial, UserUpdate, UserCreate
-from src.infrastructure.database import User as UserModel
+from application.schemas.user import UserSchema, UserPartial, UserUpdate, UserCreate
+from infrastructure.database import User as UserModel
 
 
 class SQLAlchemyUserRepository(TelegramUserRepoMixin):
@@ -23,10 +23,10 @@ class SQLAlchemyUserRepository(TelegramUserRepoMixin):
 
     async def get_user_by_id(
         self,
-        id: int,
+        user_id: int,
         schema: bool = True,
     ) -> UserSchema | UserModel | None:
-        stmt = select(UserModel).where(UserModel.id == id)
+        stmt = select(UserModel).where(UserModel.id == user_id)  # type: ignore
         user_model = await self.session.scalar(stmt)
         if not user_model:
             return None
@@ -51,7 +51,7 @@ class SQLAlchemyUserRepository(TelegramUserRepoMixin):
         tg_id: int,
         schema: bool = True,
     ) -> UserSchema | UserModel | None:
-        stmt = select(UserModel).where(UserModel.tg_id == tg_id)
+        stmt = select(UserModel).where(UserModel.tg_id == tg_id)  # type: ignore
         user_model = await self.session.scalar(stmt)
         if not user_model:
             return None

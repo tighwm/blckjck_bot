@@ -2,8 +2,8 @@ import random
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
-from src.domain.entities import Card, Rank, Suit, Player, Dealer, PlayerResult
-from src.domain.types.game import GameResult, ErrorType, ErrorMessages, SuccessType
+from domain.entities import Card, Rank, Suit, Player, Dealer, PlayerResult
+from domain.types.game import GameResult, ErrorType, ErrorMessages, SuccessType
 
 if TYPE_CHECKING:
     from src.application.schemas import GameSchema

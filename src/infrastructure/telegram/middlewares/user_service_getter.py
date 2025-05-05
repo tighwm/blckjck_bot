@@ -3,9 +3,9 @@ from typing import Any, Awaitable, Callable, Dict
 from aiogram import BaseMiddleware
 from aiogram.types import Message
 
-from src.infrastructure.database import db_helper
-from src.infrastructure.repositories import SQLAlchemyUserRepository
-from src.application.services import UserService
+from infrastructure.database import db_helper
+from infrastructure.repositories import SQLAlchemyUserRepository
+from application.services import UserService
 
 
 class UserServiceGetter(BaseMiddleware):

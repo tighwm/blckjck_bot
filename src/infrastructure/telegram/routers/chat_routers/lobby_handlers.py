@@ -3,10 +3,10 @@ from aiogram.fsm.context import FSMContext
 from aiogram.filters import Command, StateFilter
 from aiogram.types import Message
 
-from src.application.services import LobbyServiceTG
-from src.application.services.timer_mng import timer_manager
-from src.infrastructure.telegram.routers.states import ChatState
-from src.infrastructure.telegram.middlewares import (
+from application.services import LobbyServiceTG
+from application.services.timer_mng import timer_manager
+from infrastructure.telegram.routers.states import ChatState
+from infrastructure.telegram.middlewares import (
     SaveUserDB,
     LobbyServiceGetter,
     AntiFlood,

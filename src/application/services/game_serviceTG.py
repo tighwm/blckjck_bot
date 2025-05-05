@@ -3,12 +3,12 @@ from typing import Any
 
 from aiogram.types import Message
 
-from src.application.schemas import GameSchema, LobbySchema, UserPartial
-from src.application.services.timer_mng import timer_manager
-from src.infrastructure.repositories import RedisGameCacheRepo, SQLAlchemyUserRepository
-from src.domain.entities import Lobby, Game, Player, PlayerResult
-from src.domain.types.game import SuccessType, GameResult
-from src.infrastructure.telegram.routers.utils import game_btns
+from application.schemas import GameSchema, LobbySchema, UserPartial
+from application.services.timer_mng import timer_manager
+from infrastructure.repositories import RedisGameCacheRepo, SQLAlchemyUserRepository
+from domain.entities import Lobby, Game, Player, PlayerResult
+from domain.types.game import SuccessType, GameResult
+from infrastructure.telegram.routers.utils import game_btns
 
 logger = logging.getLogger(__name__)
 

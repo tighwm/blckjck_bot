@@ -3,13 +3,13 @@ from typing import Any, Awaitable, Callable, Dict
 from aiogram import BaseMiddleware
 from aiogram.types import Message
 
-from src.infrastructure.database import db_helper
-from src.infrastructure.repositories import (
+from infrastructure.database import db_helper
+from infrastructure.repositories import (
     SQLAlchemyUserRepository,
     RedisLobbyCacheRepoTG,
 )
-from src.infrastructure.redis_py.client import RedisSingleton
-from src.application.services import LobbyServiceTG
+from infrastructure.redis_py.client import RedisSingleton
+from application.services import LobbyServiceTG
 
 
 class LobbyServiceGetter(BaseMiddleware):

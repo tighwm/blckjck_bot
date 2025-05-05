@@ -2,13 +2,13 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
 
-from src.infrastructure.telegram.middlewares import (
+from infrastructure.telegram.middlewares import (
     SaveUserDB,
     AntiFlood,
     UserServiceGetter,
 )
-from src.application.services import UserService
-from src.infrastructure.telegram.routers.utils import format_user_profile
+from application.services import UserService
+from infrastructure.telegram.routers.utils import format_user_profile
 
 router = Router()
 router.message.middleware(AntiFlood())

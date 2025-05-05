@@ -5,11 +5,11 @@ __all__ = (
     "TelegramUserRepoMixin",
 )
 
-from src.application.interfaces.cache_game_repo_interface import CacheGameRepoInterface
-from src.application.interfaces.cache_lobby_repo_interface import (
+from application.interfaces.cache_game_repo_interface import CacheGameRepoInterface
+from application.interfaces.cache_lobby_repo_interface import (
     CacheLobbyRepoInterface,
 )
-from src.application.interfaces.users_repo_interface import (
+from application.interfaces.users_repo_interface import (
     UserRepoInterface,
     TelegramUserRepoMixin,
 )

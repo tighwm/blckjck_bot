@@ -3,11 +3,11 @@ from typing import Any, Awaitable, Callable, Dict
 from aiogram import BaseMiddleware
 from aiogram.types import Message
 
-from src.infrastructure.database import db_helper
-from src.infrastructure.repositories.sqlalchemy_user_repo import (
+from infrastructure.database import db_helper
+from infrastructure.repositories.sqlalchemy_user_repo import (
     SQLAlchemyUserRepository,
 )
-from src.application.schemas import UserCreate
+from application.schemas import UserCreate
 
 
 class SaveUserDB(BaseMiddleware):

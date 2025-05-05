@@ -1,8 +1,8 @@
 from redis.asyncio import Redis
 
-from src.application.interfaces.cache_game_repo_interface import CacheGameRepoInterface
-from src.domain.entities.game import Game
-from src.application.schemas.game import GameSchema
+from application.interfaces.cache_game_repo_interface import CacheGameRepoInterface
+from domain.entities.game import Game
+from application.schemas.game import GameSchema
 
 
 class RedisGameCacheRepo(CacheGameRepoInterface):

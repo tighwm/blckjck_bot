@@ -2,11 +2,11 @@ import asyncio
 
 from aiogram.types import Message
 
-from src.application.interfaces import TelegramUserRepoMixin
-from src.application.schemas import LobbySchema
-from src.application.services.timer_mng import timer_manager
-from src.infrastructure.repositories import RedisLobbyCacheRepoTG
-from src.domain.entities import Lobby, User
+from application.interfaces import TelegramUserRepoMixin
+from application.schemas import LobbySchema
+from application.services.timer_mng import timer_manager
+from infrastructure.repositories import RedisLobbyCacheRepoTG
+from domain.entities import Lobby, User
 
 
 class LobbyServiceTG:

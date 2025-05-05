@@ -2,7 +2,7 @@ from typing import Protocol
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-from src.application.schemas.user import UserCreate, UserUpdate, UserPartial, UserSchema
+from application.schemas.user import UserCreate, UserUpdate, UserPartial, UserSchema
 
 
 class UserModel(Protocol):

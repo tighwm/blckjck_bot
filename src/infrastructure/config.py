@@ -1,11 +1,11 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import BaseModel, PostgresDsn, RedisDsn
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 
 # load_dotenv()
 
 
-class DBsettings(BaseModel):
+class DBSettings(BaseModel):
     url: PostgresDsn
     echo: bool = False
     echo_pool: bool = False
@@ -29,7 +29,7 @@ class Settings(BaseSettings):
         case_sensitive=False,
     )
 
-    db: DBsettings
+    db: DBSettings
     bot: BotSettings
     redis: RedisSettings
 
