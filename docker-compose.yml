@@ -1,0 +1,39 @@
+services:
+  bot:
+    build:
+      dockerfile: Dockerfile
+      context: ./
+    environment:
+      APP_CONFIG__DB__URL: postgresql+asyncpg://postgres:123@pg/blackjack
+    depends_on:
+      pg:
+        condition: service_healthy
+
+  pg:
+    image: postgres:17.4
+    environment:
+      POSTGRES_DB: blackjack
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+    volumes:
+      - black_jack_pg_data:/var/lib/postgresql/data
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.org
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    depends_on:
+      pg:
+        condition: service_healthy
+
+volumes:
+  black_jack_pg_data:
