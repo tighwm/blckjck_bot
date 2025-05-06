@@ -1,43 +1,52 @@
 import logging
 import os
 import sys
+from typing import Optional
 
 
 def setup_logger(
-    name: str,
-    log_file: str = None,
-    level: int = logging.INFO,
+        name: str = "app_logger",
+        log_file: Optional[str] = None,
+        level: str = "info",
+        detailed: bool = False,
+        log_to_console: bool = True
 ) -> logging.Logger:
-    """
-    Настройка логгера с базовой конфигурацией.
+    levels = {
+        "debug": logging.DEBUG,
+        "info": logging.INFO,
+        "warning": logging.WARNING,
+        "error": logging.ERROR,
+        "critical": logging.CRITICAL
+    }
 
-    :param name: Имя логгера
-    :param log_file: Путь к файлу для записи логов (если None, логи выводятся только в консоль)
-    :param level: Уровень логирования (по умолчанию INFO)
-    :return: Настроенный логгер
-    """
+    if level.lower() not in levels:
+        raise ValueError(f"Уровень логирования должен быть одним из: {', '.join(levels.keys())}")
+
     logger = logging.getLogger(name)
-    logger.setLevel(level)
+    logger.setLevel(levels[level.lower()])
 
-    # Проверяем, чтобы не добавлять хендлеры повторно
-    if not logger.handlers:
-        formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S",
-        )
+    logger.handlers = []
 
-        # Консольный обработчик
-        console_handler = logging.StreamHandler(stream=sys.stdout)
+    if detailed:
+        log_format = "%(asctime)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s"
+    else:
+        log_format = "%(asctime)s - %(levelname)s - %(message)s"
+
+    formatter = logging.Formatter(log_format)
+
+    if log_file:
+        log_dir = os.path.dirname(log_file)
+        if log_dir and not os.path.exists(log_dir):
+            os.makedirs(log_dir)
+
+        file_handler = logging.FileHandler(log_file, encoding='utf-8')
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+
+    if log_to_console or not log_file:
+        console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setFormatter(formatter)
         logger.addHandler(console_handler)
 
-        # Файловый обработчик, если указан путь
-        if log_file:
-            os.makedirs(os.path.dirname(log_file), exist_ok=True)
-            file_handler = logging.FileHandler(log_file, encoding="utf-8")
-            file_handler.setFormatter(formatter)
-            logger.addHandler(file_handler)
-
-        logger.propagate = False
-
     return logger
+
