@@ -13,7 +13,7 @@ from infrastructure.redis_py.events.event_system import EventSystemTG
 from infrastructure.redis_py.client import RedisSingleton
 from utils.logger import setup_logger
 
-logger = setup_logger(name=__name__, level=logging.INFO)
+logger = setup_logger(name=__name__, log_file="logs/.log", level=logging.INFO)
 
 fsm_redis_storage = RedisStorage.from_url(str(settings.redis.url))
 

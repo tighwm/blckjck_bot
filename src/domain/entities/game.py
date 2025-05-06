@@ -1,6 +1,6 @@
 import random
 from datetime import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from domain.entities import Card, Rank, Suit, Player, Dealer, PlayerResult
 from domain.types.game import GameResult, ErrorType, ErrorMessages, SuccessType
@@ -80,9 +80,10 @@ class Game:
         return all(player.bid != 0 for player in self.players.values())
 
     def _check_all_have_results(self) -> bool:
-        return all(player.result != None for player in self.players.values())
+        return all(player.result is not None for player in self.players.values())
 
-    def _get_player_data(self, player: Player) -> dict:
+    @staticmethod
+    def _get_player_data(player: Player) -> dict:
         """Формирует словарь с данными игрока для ответа"""
         return {
             "player_name": player.username,
@@ -101,8 +102,9 @@ class Game:
         success: bool = True,
     ) -> GameResult:
         """Создает объект GameResult с заданными параметрами"""
+        data = {}
         if player:
-            data = {"player": self._get_player_data(player)}
+            data["player"] = self._get_player_data(player)
             data["dealer_turn"] = True
         if success_type == SuccessType.HIT_ACCEPTED:
             data["dealer_turn"] = False
@@ -247,7 +249,7 @@ class Game:
         data = {"dealer": self._get_dealer_data()}
 
         player = self.get_current_turn_player()
-        if not player.result is None:
+        if player.result is not None:
             player = self.next_player()
         player_data = None if player is None else self._get_player_data(player)
         data["player"] = player_data
