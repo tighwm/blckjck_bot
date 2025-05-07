@@ -12,7 +12,7 @@ from application.schemas import LobbySchema
 from infrastructure.telegram.routers.utils import game_btns, format_player_info
 from infrastructure.database.models.db_helper import db_helper
 from infrastructure.repositories import RedisGameCacheRepo, SQLAlchemyUserRepository
-from infrastructure.redis_py.client import RedisSingleton
+from infrastructure.redis_py.redis_helper import redis_helper
 
 T = TypeVar("T")
 TaskFunc = Callable[..., Coroutine[Any, Any, T]]
@@ -23,11 +23,11 @@ async def game_service_getter(with_user_repo: bool = False):
     if with_user_repo:
         async with db_helper.session_getter() as session:
             user_repo = SQLAlchemyUserRepository(session=session)
-            game_repo = RedisGameCacheRepo(redis=RedisSingleton())
+            game_repo = RedisGameCacheRepo(redis=redis_helper.get_redis_client())
             game_service = GameServiceTG(game_repo=game_repo, user_repo=user_repo)
             yield game_service
     else:
-        game_repo = RedisGameCacheRepo(redis=RedisSingleton())
+        game_repo = RedisGameCacheRepo(redis=redis_helper.get_redis_client())
         game_service = GameServiceTG(game_repo=game_repo)
         yield game_service
 
@@ -90,7 +90,6 @@ class StreamListener:
         msg_id: bytes,
         data: dict[bytes, bytes],
     ):
-        """Абстрактный метод обработки сообщения"""
         raise NotImplementedError
 
     async def run(self):
@@ -130,7 +129,6 @@ class GameStartingListener(StreamListener):
 
         lobby_schema = LobbySchema.model_validate_json(lobby_json_str)
 
-        # Добавляем задачу создания игры в очередь
         await self.task_queue.add_task(
             self._create_game_task,
             lobby_schema=lobby_schema,

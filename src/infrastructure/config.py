@@ -1,7 +1,8 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import BaseModel, PostgresDsn, RedisDsn
-# from dotenv import load_dotenv
 
+# from dotenv import load_dotenv
+#
 # load_dotenv()
 
 

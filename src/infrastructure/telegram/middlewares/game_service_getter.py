@@ -8,7 +8,7 @@ from infrastructure.repositories import (
     SQLAlchemyUserRepository,
     RedisGameCacheRepo,
 )
-from infrastructure.redis_py.client import RedisSingleton
+from infrastructure.redis_py.redis_helper import redis_helper
 from application.services import GameServiceTG
 
 
@@ -21,7 +21,7 @@ class GameServiceGetter(BaseMiddleware):
     ) -> Any:
         async with db_helper.session_getter() as session:
             user_repo = SQLAlchemyUserRepository(session)
-            cache_repo = RedisGameCacheRepo(redis=RedisSingleton())
+            cache_repo = RedisGameCacheRepo(redis=redis_helper.get_redis_client())
             game_service = GameServiceTG(
                 user_repo=user_repo,
                 game_repo=cache_repo,
