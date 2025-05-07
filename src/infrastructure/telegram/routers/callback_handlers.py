@@ -44,7 +44,7 @@ async def hit_handler(
 
     if not response.success:
         if response.type == ErrorType.PLAYER_NOT_FOUND:
-            await callback.answer(text=f"Ты не в игре бротон.")
+            await callback.answer(text=f"Ты не в игре.")
         elif response.type == ErrorType.ANOTHER_PLAYER_TURN:
             await callback.answer(text="Сейчас ходит другой игрок.")
         return
@@ -109,7 +109,7 @@ async def stand_handler(
 
     if not response.success:
         if response.type == ErrorType.PLAYER_NOT_FOUND:
-            await callback.answer(text=f"Ты не в игре бротон.")
+            await callback.answer(text=f"Ты не в игре")
         elif response.type == ErrorType.ANOTHER_PLAYER_TURN:
             await callback.answer(text="Сейчас ходит другой игрок.")
         return

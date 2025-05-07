@@ -49,15 +49,19 @@ class GameServiceTG:
 
         player = game.get_current_turn_player()
         player.result = PlayerResult.OUT
-        await message.answer(f"Игрок {player.username} шпаклевка.")
+        await message.answer(f"Игрок {player.username} исключен за бездействие.")
 
         next_player = game.next_player()
         if next_player is None:
-            await message.answer(f"Дилер учится делать ход.")
-            await self.game_repo.push_dealer(chat_id=chat_id)
+            await message.answer(f"Ход переходит дилеру")
+            action = "reveal" if game.current_round == 2 else "turns"
+            await self.game_repo.push_dealer(
+                chat_id=chat_id,
+                action=action,  # type: ignore
+            )
             return
 
-        msg = await message.answer(
+        await message.answer(
             text=f"Ход игрока {next_player.username}",
             reply_markup=game_btns(player_id=next_player.tg_id),
         )
@@ -68,6 +72,7 @@ class GameServiceTG:
         message: Message,
     ):
         chat_id = message.chat.id
+
         game_schema = await self.game_repo.get_game(chat_id)
         if game_schema is None:
             return
@@ -82,12 +87,12 @@ class GameServiceTG:
                 await message.answer(f"Игрок {player.username} шпатель.")
 
         if count_out == len(players):
-            await message.answer("Все игроки шпатели.")
+            await message.answer("Все игроки были исключены.")
             await self.game_repo.delete_cache_game(chat_id)
             return
 
         cur_player = game.get_current_turn_player()
-        if not cur_player.result is None:
+        if cur_player.result is not None:
             cur_player = game.next_player()
 
         msg = await message.answer(
@@ -129,10 +134,9 @@ class GameServiceTG:
         chat_id: int,
         user_tg_id: int,
         bid: int,
-    ) -> GameResult:
+    ) -> GameResult | None:
         game_schema = await self.game_repo.get_game(chat_id=chat_id)
         if not game_schema:
-            logger.debug("Игра в чате с айди chat_id=%s не была найдена", chat_id)
             return None
 
         user_model = await self.user_repo.get_user_by_tg_id(
@@ -140,12 +144,6 @@ class GameServiceTG:
             schema=False,
         )
         if bid > user_model.balance:
-            logger.debug(
-                "Ставка %s превышает баланс %s игрока id=%s",
-                bid,
-                user_model.balance,
-                user_model.id,
-            )
             return None
 
         game = Game.from_dto(game_schema)
@@ -154,7 +152,6 @@ class GameServiceTG:
             bid=bid,
         )
         if not res.success:
-            logger.debug("Ставка не удалась по причине %s", res.type)
             return res
 
         if res.type == SuccessType.ALL_PLAYERS_BET:
@@ -174,7 +171,7 @@ class GameServiceTG:
         self,
         chat_id: int,
         user_tg_id: int,
-    ) -> GameResult:
+    ) -> GameResult | None:
         timer_manager.cancel_timer(
             timer_type="game:turn",
             chat_id=chat_id,
@@ -192,11 +189,12 @@ class GameServiceTG:
             return res
 
         await self.game_repo.cache_game(game)
-        if res.data.get("dealer_turn") == True:
-            if game.round == 1:
-                await self.game_repo.push_dealer(chat_id=chat_id, action="reveal")
-            elif game.round == 2:
-                await self.game_repo.push_dealer(chat_id=chat_id, action="turns")
+        if res.data.get("dealer_turn") is True:
+            action = "reveal" if game.current_round == 2 else "turns"
+            await self.game_repo.push_dealer(
+                chat_id=chat_id,
+                action=action,  # type: ignore
+            )
 
         return res
 
@@ -212,7 +210,10 @@ class GameServiceTG:
         )
         game_schema = await self.game_repo.get_game(chat_id=chat_id)
         if not game_schema:
-            logger.debug("Игра в чате с айди chat_id=%s не была найдена", chat_id)
+            # logger.debug(
+            #     "Игра в чате с айди chat_id=%s не была найдена",
+            #     chat_id,
+            # )
             return None
 
         game = Game.from_dto(game_schema)
@@ -249,7 +250,10 @@ class GameServiceTG:
     async def dealer_turns(self, chat_id: int):
         game_schema = await self.game_repo.get_game(chat_id=chat_id)
         if not game_schema:
-            logger.debug("Игра в чате с айди chat_id=%s не была найдена", chat_id)
+            # logger.debug(
+            #     "Игра в чате с айди chat_id=%s не была найдена",
+            #     chat_id,
+            # )
             return None
 
         game = Game.from_dto(game_schema)
@@ -263,7 +267,10 @@ class GameServiceTG:
     async def ending_game(self, chat_id: int):
         game_schema = await self.game_repo.get_game(chat_id)
         if not game_schema:
-            logger.debug("Игра в чате с айди chat_id=%s не была найдена", chat_id)
+            # logger.debug(
+            #     "Игра в чате с айди chat_id=%s не была найдена",
+            #     chat_id,
+            # )
             return None
 
         game = Game.from_dto(game_schema)
