@@ -18,6 +18,15 @@ router.message.middleware(GameServiceGetter())
 filters_on_bid = F.text.regexp(r"(?i)^ставка\s([1-9]\d*)$")
 
 
+def format_dealer_text(dealer_data: dict) -> str:
+    return (
+        f"Карты дилера\n"
+        f"Первая: {dealer_data.get("first_card")}\n"
+        f"Вторая: ***\n"
+        f"Очки: {dealer_data.get("score")}"
+    )
+
+
 @router.message(filters_on_bid, ChatState.bid)
 async def bid_handle(
     message: Message,
@@ -40,17 +49,11 @@ async def bid_handle(
 
     if response.type == SuccessType.BID_ACCEPTED:
         await message.answer("Ставка принята.")
-    if response.type == SuccessType.ALL_PLAYERS_BET:
+    elif response.type == SuccessType.ALL_PLAYERS_BET:
         await state.set_state(ChatState.game)
         player = response.data.get("player")
         player_id = player.get("player_id")
-        dealer = response.data.get("dealer")
-        dealer_text = (
-            f"Карты дилера\n"
-            f"Первая: {dealer.get("first_card")}\n"
-            f"Вторая: ***\n"
-            f"Очки: {dealer.get("score")}"
-        )
+        dealer_text = format_dealer_text(response.data.get("dealer"))
         await message.answer(text=dealer_text)
         msg = await message.answer(
             text=f"Ход игрока {player.get("player_name")}",
