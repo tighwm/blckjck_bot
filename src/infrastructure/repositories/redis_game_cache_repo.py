@@ -1,3 +1,5 @@
+from typing import Literal
+
 from redis.asyncio import Redis
 
 from application.interfaces.cache_game_repo_interface import CacheGameRepoInterface
@@ -59,7 +61,11 @@ class RedisGameCacheRepo(CacheGameRepoInterface):
         fsm_key = f"fsm:{chat_id}:{chat_id}:state"
         await self.redis.set(name=fsm_key, value="ChatState:game")
 
-    async def push_dealer(self, chat_id: int, action: str):
+    async def push_dealer(
+        self,
+        chat_id: int,
+        action: Literal["turns", "reveal"],
+    ):
         await self.redis.xadd(
             name=self.dealer_stream_key,
             fields={
