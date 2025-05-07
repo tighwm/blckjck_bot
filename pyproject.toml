@@ -1,6 +1,9 @@
 [tool.poetry]
 package-mode = false
 
+[tool.poetry.group.dev.dependencies]
+black = "^25.1.0"
+
 [project]
 name = "onion-blckjck"
 version = "0.1.0"
