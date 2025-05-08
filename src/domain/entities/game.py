@@ -87,14 +87,13 @@ class Game:
 
     @staticmethod
     def _get_player_data(player: Player) -> dict:
-        """Формирует словарь с данными игрока для ответа"""
         return {
             "player_name": player.username,
             "cards": player.cards_str(),
             "score": player.score,
             "player_id": player.tg_id,
             "bid": player.bid,
-            "result": str(player.result),
+            "result": player.result,
         }
 
     def _create_game_result_with_player(
@@ -104,7 +103,6 @@ class Game:
         next_player: Player = None,
         success: bool = True,
     ) -> GameResult:
-        """Создает объект GameResult с заданными параметрами"""
         data = {}
         if player:
             data["player"] = self._get_player_data(player)
