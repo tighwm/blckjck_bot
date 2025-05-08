@@ -6,7 +6,7 @@ from application.services import GameServiceTG
 from application.services.timer_mng import timer_manager
 from domain.types.game import SuccessType
 from infrastructure.telegram.routers.states import ChatState
-from infrastructure.telegram.routers.utils import game_btns
+from utils.tg_utils import pass_turn_next_player
 from infrastructure.telegram.middlewares import GameServiceGetter, AntiFlood
 
 

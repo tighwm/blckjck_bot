@@ -28,7 +28,7 @@ class GameResult:
     success: bool
     type: SuccessType | ErrorType | None = None
     message: str = ""
-    data: dict[str, dict[str, Any]] | None = None
+    data: dict[str, Any] | None = None
 
 
 class ErrorMessages:

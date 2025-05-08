@@ -10,8 +10,7 @@ from infrastructure.telegram.middlewares import (
 )
 from infrastructure.telegram.routers.states import ChatState
 from application.services import GameServiceTG
-from application.services.timer_mng import timer_manager
-from infrastructure.telegram.routers.utils import (
+from utils.tg_utils import (
     PlayerFilter,
     HitData,
     StandData,

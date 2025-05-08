@@ -9,7 +9,7 @@ from aiogram import Bot
 from application.services import GameServiceTG
 from application.services.timer_mng import timer_manager
 from application.schemas import LobbySchema
-from infrastructure.telegram.routers.utils import game_btns, format_player_info
+from utils.tg_utils import game_btns, format_player_info
 from infrastructure.database.models.db_helper import db_helper
 from infrastructure.repositories import RedisGameCacheRepo, SQLAlchemyUserRepository
 from infrastructure.redis_py.redis_helper import redis_helper

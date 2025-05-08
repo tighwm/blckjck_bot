@@ -5,7 +5,7 @@ from application.services.timer_mng import timer_manager
 from infrastructure.repositories import RedisGameCacheRepo, SQLAlchemyUserRepository
 from domain.entities import Lobby, Game, Player, PlayerResult
 from domain.types.game import SuccessType, GameResult
-from infrastructure.telegram.routers.utils import game_btns
+from utils.tg_utils import game_btns
 
 
 async def apply_players_amount(
