@@ -1,14 +1,16 @@
+import asyncio
+
 from aiogram import Router, F
 from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 
-from application.services import GameServiceTG
-from application.services.timer_mng import timer_manager
 from domain.types.game import SuccessType
 from infrastructure.telegram.routers.states import ChatState
 from utils.tg_utils import pass_turn_next_player
 from infrastructure.telegram.middlewares import GameServiceGetter, AntiFlood
 
+if TYPE_CHECKING:
+    from application.services import GameServiceTG
 
 router = Router()
 router.message.middleware(AntiFlood())
@@ -18,7 +20,7 @@ router.message.middleware(GameServiceGetter())
 filters_on_bid = F.text.regexp(r"(?i)^ставка\s([1-9]\d*)$")
 
 
-def format_dealer_text(dealer_data: dict) -> str:
+def format_dealer_cards_text(dealer_data: dict) -> str:
     return (
         f"Карты дилера\n"
         f"Первая: {dealer_data.get("first_card")}\n"
@@ -27,11 +29,23 @@ def format_dealer_text(dealer_data: dict) -> str:
     )
 
 
+async def the_deal_process(message: Message, deal_data: list[dict]):
+    await message.answer("Первая раздача карт игрокам.")
+    for player in deal_data:
+        text = (
+            f"Карты игрока {player.get("player_name")}\n"
+            f"{player.get("cards")} {"" if player.get("result") is None else " Блекджек💀"}\n"
+            f"Очки: {player.get("score")}\n"
+        )
+        await message.answer(text)
+        await asyncio.sleep(1)
+
+
 @router.message(filters_on_bid, ChatState.bid)
 async def bid_handle(
     message: Message,
     state: FSMContext,
-    game_service: GameServiceTG,
+    game_service: "GameServiceTG",
 ):
     user_bid = int(message.text.split()[1])  # Получаем ставку из "ставка (число)"
     if user_bid < 5:
@@ -51,19 +65,11 @@ async def bid_handle(
         await message.answer("Ставка принята.")
     elif response.type == SuccessType.ALL_PLAYERS_BET:
         await state.set_state(ChatState.game)
-        player = response.data.get("player")
-        player_id = player.get("player_id")
-        dealer_text = format_dealer_text(response.data.get("dealer"))
+
+        await the_deal_process(message, response.data.get("the_deal"))
+
+        dealer_text = format_dealer_cards_text(response.data.get("dealer"))
         await message.answer(text=dealer_text)
-        msg = await message.answer(
-            text=f"Ход игрока {player.get("player_name")}",
-            reply_markup=game_btns(player_id),
-        )
-        timer_manager.create_timer(
-            "game:turn",
-            msg.chat.id,
-            game_service.kick_afk,
-            player_id,
-            30,
-            msg,
-        )
+
+        player = response.data.get("player")
+        await pass_turn_next_player(message, player, game_service)
