@@ -295,7 +295,7 @@ class Game:
             if (
                 player.result == PlayerResult.BUST
                 or player.result == PlayerResult.OUT
-                or dealer_score > player_score
+                or (dealer_score > player_score and not dealer_score > 21)
             ):
                 player_data = self._get_player_data(player)
                 lose.append(player_data)
