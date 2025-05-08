@@ -146,6 +146,7 @@ class GameServiceTG:
 
         if res.type == SuccessType.ALL_PLAYERS_BET:
             timer_manager.cancel_timer(timer_type="game:bid", chat_id=chat_id)
+            res.data["the_deal"] = game.the_deal()
 
         new_balance = user_model.balance - bid
         update_user = UserPartial(balance=new_balance)

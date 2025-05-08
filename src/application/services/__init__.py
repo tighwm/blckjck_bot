@@ -4,6 +4,6 @@ __all__ = (
     "UserService",
 )
 
-from application.services.lobby_serviceTG import LobbyServiceTG
-from application.services.game_serviceTG import GameServiceTG
-from application.services.user_service import UserService
+from .lobby_serviceTG import LobbyServiceTG
+from .game_serviceTG import GameServiceTG
+from .user_service import UserService
