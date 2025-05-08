@@ -1,6 +1,3 @@
-import logging
-from typing import Any
-
 from aiogram.types import Message
 
 from application.schemas import GameSchema, LobbySchema, UserPartial
@@ -10,10 +7,8 @@ from domain.entities import Lobby, Game, Player, PlayerResult
 from domain.types.game import SuccessType, GameResult
 from infrastructure.telegram.routers.utils import game_btns
 
-logger = logging.getLogger(__name__)
 
-
-async def update_users_balance(
+async def apply_players_amount(
     user_repo: SQLAlchemyUserRepository,
     players: list[dict],
 ):
@@ -80,11 +75,6 @@ class GameServiceTG:
         game = Game.from_dto(game_schema)
         count_out = 0
         players = game.players.values()
-        for player in players:
-            if player.bid == 0 and player.result is None:
-                count_out += 1
-                player.result = PlayerResult.OUT
-                await message.answer(f"Игрок {player.username} шпатель.")
 
         if count_out == len(players):
             await message.answer("Все игроки были исключены.")
@@ -261,7 +251,7 @@ class GameServiceTG:
         push = res.get("push")
 
         players = wins + push
-        await update_users_balance(user_repo=self.user_repo, players=players)
+        await apply_players_amount(user_repo=self.user_repo, players=players)
 
         await self.game_repo.delete_cache_game(chat_id)
         return res
