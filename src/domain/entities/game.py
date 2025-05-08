@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 
 
 def deck_factory():
-    deck = [Card(rank, suit) for suit in Suit for rank in Rank]
+    deck = [Card(rank, suit) for suit in Suit for rank in Rank]  # type: ignore
 
     random.shuffle(deck)
     return deck
@@ -24,16 +24,16 @@ class Game:
         dealer: Dealer = None,
         created_at: datetime = None,
         current_player_index: int = 0,
-        round: int = 1,
+        current_round: int = 1,
         deck: list[Card] = None,
     ):
         self.chat_id = chat_id
+        self.deck = deck if deck is not None else deck_factory()
         self.players = players
         self.dealer = dealer if dealer is not None else Dealer()
         self.created_at = created_at if created_at is not None else datetime.now()
         self.current_player_index = current_player_index
-        self.round = round
-        self.deck = deck if deck is not None else deck_factory()
+        self.current_round = current_round
 
         self.turn_order = tuple(self.players.keys())
 
@@ -56,8 +56,11 @@ class Game:
             deck=[Card.from_dto(card_schema) for card_schema in data.deck],
             created_at=data.created_at,
             current_player_index=data.current_player_index,
-            round=data.round,
+            current_round=data.current_round,
         )
+
+    def __repr__(self):
+        return f"Game instance, chat_id:{self.chat_id}, round:{self.current_round}"
 
     def _get_player_by_id(
         self,
