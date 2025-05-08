@@ -11,5 +11,5 @@ class GameSchema(BaseModel):
     dealer: DealerSchema
     deck: list[CardSchema]
     created_at: datetime
-    current_player_index: int = 0
-    round: int = 1
+    current_player_index: int
+    current_round: int
