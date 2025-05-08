@@ -1,6 +1,4 @@
-import asyncio
-
-from aiogram import Router, F
+from aiogram import Router
 from aiogram.types import CallbackQuery
 
 from infrastructure.telegram.middlewares import (
@@ -14,8 +12,9 @@ from utils.tg_utils import (
     PlayerFilter,
     HitData,
     StandData,
-    game_btns,
+    pass_turn_next_player,
     format_player_info,
+    new_turn_current_player,
 )
 from domain.types.game import SuccessType, ErrorType
 
@@ -52,20 +51,7 @@ async def hit_handler(
     next_player = response.data.get("next_player")
 
     if response.type == SuccessType.HIT_ACCEPTED:
-        player_id = player.get("player_id")
-        await callback.message.edit_text(
-            text=format_player_info(player),
-            reply_markup=game_btns(player_id=player_id),
-        )
-        timer_manager.create_timer(
-            "game:turn",
-            chat_id,
-            game_service.kick_afk,
-            player_id,
-            30,
-            callback.message,
-        )
-
+        await new_turn_current_player(callback.message, player, game_service)
         return
     elif response.type == SuccessType.HIT_BLACKJACK:
         await callback.message.edit_text(text=format_player_info(player, "блекджек."))
@@ -75,20 +61,7 @@ async def hit_handler(
     if next_player is None:
         return
 
-    next_player_text = f"Ход игрока {next_player.get("player_name")}"
-    next_player_id = next_player.get("player_id")
-    msg = await callback.message.answer(
-        text=next_player_text,
-        reply_markup=game_btns(player_id=next_player_id),
-    )
-    timer_manager.create_timer(
-        "game:turn",
-        chat_id,
-        game_service.kick_afk,
-        next_player_id,
-        30,
-        msg,
-    )
+    await pass_turn_next_player(callback.message, next_player, game_service)
 
 
 @router.callback_query(
@@ -120,17 +93,4 @@ async def stand_handler(
     if next_player is None:
         return
 
-    next_player_text = f"Ход игрока {next_player.get("player_name")}"
-    next_player_id = next_player.get("player_id")
-    msg = await callback.message.answer(
-        text=next_player_text,
-        reply_markup=game_btns(player_id=next_player_id),
-    )
-    timer_manager.create_timer(
-        "game:turn",
-        msg.chat.id,
-        game_service.kick_afk,
-        next_player_id,
-        30,
-        msg,
-    )
+    await pass_turn_next_player(callback.message, next_player, game_service)

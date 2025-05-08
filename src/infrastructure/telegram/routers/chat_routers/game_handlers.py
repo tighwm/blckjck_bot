@@ -1,3 +1,4 @@
+from typing import TYPE_CHECKING
 import asyncio
 
 from aiogram import Router, F
