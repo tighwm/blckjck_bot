@@ -72,7 +72,6 @@ class Game:
         self,
         player: Player,
     ) -> bool:
-        """Проверка на то, ход ли данного игрока"""
         try:
             cur_player_id = self.turn_order[self.current_player_index]
         except IndexError:
@@ -113,6 +112,17 @@ class Game:
             data["next_player"] = self._get_player_data(next_player)
             data["dealer_turn"] = False
         return GameResult(success=success, type=success_type, data=data)
+
+    def the_deal(self):
+        data = []
+        for player in self.players.values():
+            player.cards.append(self.deck.pop())
+            player.cards.append(self.deck.pop())
+            if player.has_blackjack():
+                player.result = PlayerResult.BLACKJACK
+            data.append(self._get_player_data(player))
+
+        return data
 
     def get_current_turn_player(self):
         try:
@@ -244,7 +254,7 @@ class Game:
         )
 
     def init_second_round(self):
-        self.round = 2
+        self.current_round = 2
         self.current_player_index = 0
 
         data = {"dealer": self._get_dealer_data()}
