@@ -27,7 +27,7 @@ def game_btns(player_id: int):
     hit_data = HitData(cur_player_id=player_id)
     stand_data = StandData(cur_player_id=player_id)
     hit = InlineKeyboardButton(text="Взять карту", callback_data=hit_data.pack())
-    stand = InlineKeyboardButton(text="Абоба", callback_data=stand_data.pack())
+    stand = InlineKeyboardButton(text="Воздержаться💀", callback_data=stand_data.pack())
     row = [hit, stand]
     rows = [row]
     markup = InlineKeyboardMarkup(inline_keyboard=rows)
