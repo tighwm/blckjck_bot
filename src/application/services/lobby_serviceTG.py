@@ -1,5 +1,3 @@
-import asyncio
-
 from aiogram.types import Message
 
 from application.interfaces import TelegramUserRepoMixin
@@ -18,8 +16,8 @@ class LobbyServiceTG:
         self.lobby_repo = lobby_repo
         self.user_repo = user_repo
 
+    @staticmethod
     def _check_user_in_lobby(
-        self,
         user_id: int,
         lobby_schema: LobbySchema,
     ):
@@ -59,7 +57,7 @@ class LobbyServiceTG:
         self,
         chat_id: int,
         user_id: int,
-    ) -> LobbySchema:
+    ) -> LobbySchema | None:
         async with self.lobby_repo.with_lock(chat_id):
             lobby_schema = await self.lobby_repo.get_lobby(chat_id=chat_id)
             if lobby_schema:
@@ -82,7 +80,7 @@ class LobbyServiceTG:
         self,
         chat_id: int,
         user_id: int,
-    ) -> LobbySchema:
+    ) -> LobbySchema | None:
         async with self.lobby_repo.with_lock(chat_id):
             lobby_schema = await self.lobby_repo.get_lobby(chat_id=chat_id)
             if not lobby_schema:
@@ -102,7 +100,7 @@ class LobbyServiceTG:
         self,
         chat_id: int,
         user_id: int,
-    ) -> LobbySchema:
+    ) -> LobbySchema | None:
         async with self.lobby_repo.with_lock(chat_id):
             lobby_schema = await self.lobby_repo.get_lobby(chat_id=chat_id)
             if not lobby_schema:
