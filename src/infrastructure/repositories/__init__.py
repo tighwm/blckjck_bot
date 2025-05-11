@@ -1,15 +1,15 @@
 __all__ = (
-    "SQLAlchemyUserRepository",
-    "RedisLobbyCacheRepo",
+    "SQLAlchemyUserRepositoryTG",
+    "RedisLobbyCacheRepoTG",
     "RedisGameCacheRepo",
     "RedisLobbyCacheRepoTG",
 )
 
 from infrastructure.repositories.sqlalchemy_user_repo import (
-    SQLAlchemyUserRepository,
+    SQLAlchemyUserRepositoryTG,
 )
 from infrastructure.repositories.redis_lobby_cache_repo import (
-    RedisLobbyCacheRepo,
+    RedisLobbyCacheRepoTG,
     RedisLobbyCacheRepoTG,
 )
 from infrastructure.repositories.redis_game_cache_repo import RedisGameCacheRepo

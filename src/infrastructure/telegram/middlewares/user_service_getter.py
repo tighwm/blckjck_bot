@@ -4,7 +4,7 @@ from aiogram import BaseMiddleware
 from aiogram.types import Message
 
 from infrastructure.database import db_helper
-from infrastructure.repositories import SQLAlchemyUserRepository
+from infrastructure.repositories import SQLAlchemyUserRepositoryTG
 from application.services import UserService
 
 
@@ -16,7 +16,7 @@ class UserServiceGetter(BaseMiddleware):
         data: Dict[str, Any],
     ) -> Any:
         async with db_helper.session_getter() as session:
-            user_repo = SQLAlchemyUserRepository(session)
+            user_repo = SQLAlchemyUserRepositoryTG(session)
             user_service = UserService(user_repo)
             data["user_service"] = user_service
             return await handler(event, data)

@@ -67,7 +67,7 @@ class IntervalEventTimer(EventTimer):
             try:
                 await self.event(remaining_time=remaining_time)
             except Exception as e:
-                logger.error("Ошибка интеравал таймера id=%s: %s", self.id, e)
+                logger.error("Ошибка интервал таймера id=%s: %s", self.id, e)
                 import traceback
 
                 traceback.print_exc()

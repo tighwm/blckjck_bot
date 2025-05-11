@@ -5,7 +5,7 @@ from aiogram.types import Message
 
 from infrastructure.database import db_helper
 from infrastructure.repositories.sqlalchemy_user_repo import (
-    SQLAlchemyUserRepository,
+    SQLAlchemyUserRepositoryTG,
 )
 from application.schemas import UserCreate
 
@@ -19,7 +19,7 @@ class SaveUserDB(BaseMiddleware):
     ) -> Any:
         async with db_helper.session_getter() as session:
             user_id = event.from_user.id
-            user_repo = SQLAlchemyUserRepository(session)
+            user_repo = SQLAlchemyUserRepositoryTG(session)
             user_schema = await user_repo.get_user_by_tg_id(tg_id=user_id)
             if user_schema:
                 return await handler(event, data)

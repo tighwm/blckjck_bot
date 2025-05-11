@@ -1,6 +1,6 @@
 from dataclasses import asdict
 
-from infrastructure.repositories import SQLAlchemyUserRepository
+from application.interfaces import BaseTelegramUserRepo
 from domain.entities import User
 
 
@@ -9,13 +9,16 @@ class UserNotFound(Exception):
 
 
 class UserService:
-    def __init__(self, user_repo: SQLAlchemyUserRepository):
+    def __init__(
+        self,
+        user_repo: BaseTelegramUserRepo,
+    ):
         self.user_repo = user_repo
 
     async def get_user_profile(self, user_id: int):
         user_schema = await self.user_repo.get_user_by_tg_id(user_id)
         if user_schema is None:
-            raise UserNotFound("Пользователь не был найден")
+            raise UserNotFound(f"User with {user_id} id not found")
         user = User.from_dto(user_schema)
         data = asdict(user)
         return data

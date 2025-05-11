@@ -1,17 +1,17 @@
 from aiogram.types import Message
 
-from application.interfaces import TelegramUserRepoMixin
+from application.interfaces import BaseTelegramUserRepo
+from application.interfaces.cache_lobby_repo_interface import BaseCacheLobbyRepoTG
 from application.schemas import LobbySchema
 from application.services.timer_mng import timer_manager
-from infrastructure.repositories import RedisLobbyCacheRepoTG
 from domain.entities import Lobby, User
 
 
 class LobbyServiceTG:
     def __init__(
         self,
-        lobby_repo: RedisLobbyCacheRepoTG,
-        user_repo: TelegramUserRepoMixin,
+        lobby_repo: BaseCacheLobbyRepoTG,
+        user_repo: BaseTelegramUserRepo,
     ):
         self.lobby_repo = lobby_repo
         self.user_repo = user_repo
@@ -47,7 +47,7 @@ class LobbyServiceTG:
         chat_id = message.chat.id
         lobby_schema = await self.lobby_repo.get_lobby(chat_id)
         text = (
-            f"Возможно игра началась я ебу что ли\n"
+            f"Запущено лобби на игру.\n"
             f"Игроки: {lobby_schema.str_users()}\n"
             f"Таймер: {remaining_time}"
         )
@@ -57,6 +57,7 @@ class LobbyServiceTG:
         self,
         chat_id: int,
         user_id: int,
+        timeout: int,
     ) -> LobbySchema | None:
         async with self.lobby_repo.with_lock(chat_id):
             lobby_schema = await self.lobby_repo.get_lobby(chat_id=chat_id)
@@ -71,7 +72,7 @@ class LobbyServiceTG:
                 chat_id,
                 self._lobby_timer,
                 None,
-                15,
+                timeout,
                 chat_id,
             )
             return await self.lobby_repo.cache_lobby(lobby=lobby)

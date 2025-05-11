@@ -2,14 +2,14 @@ from aiogram.types import Message
 
 from application.schemas import GameSchema, LobbySchema, UserPartial
 from application.services.timer_mng import timer_manager
-from infrastructure.repositories import RedisGameCacheRepo, SQLAlchemyUserRepository
+from infrastructure.repositories import RedisGameCacheRepo, SQLAlchemyUserRepositoryTG
 from domain.entities import Lobby, Game, Player, PlayerResult
 from domain.types.game import SuccessType, GameResult
 from utils.tg_utils import game_btns
 
 
 async def apply_players_amount(
-    user_repo: SQLAlchemyUserRepository,
+    user_repo: SQLAlchemyUserRepositoryTG,
     players: list[dict],
 ):
     if not players:
@@ -27,7 +27,7 @@ class GameServiceTG:
     def __init__(
         self,
         game_repo: RedisGameCacheRepo,
-        user_repo: SQLAlchemyUserRepository | None = None,
+        user_repo: SQLAlchemyUserRepositoryTG | None = None,
     ):
         self.game_repo = game_repo
         self.user_repo = user_repo
@@ -256,6 +256,3 @@ class GameServiceTG:
 
         await self.game_repo.delete_cache_game(chat_id)
         return res
-
-
-# я обязательно доделаю..

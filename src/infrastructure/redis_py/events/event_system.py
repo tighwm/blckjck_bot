@@ -11,7 +11,7 @@ from application.services.timer_mng import timer_manager
 from application.schemas import LobbySchema
 from utils.tg_utils import pass_turn_next_player
 from infrastructure.database.models.db_helper import db_helper
-from infrastructure.repositories import RedisGameCacheRepo, SQLAlchemyUserRepository
+from infrastructure.repositories import RedisGameCacheRepo, SQLAlchemyUserRepositoryTG
 from infrastructure.redis_py.redis_helper import redis_helper
 
 T = TypeVar("T")
@@ -22,7 +22,7 @@ TaskFunc = Callable[..., Coroutine[Any, Any, T]]
 async def game_service_getter(with_user_repo: bool = False):
     if with_user_repo:
         async with db_helper.session_getter() as session:
-            user_repo = SQLAlchemyUserRepository(session=session)
+            user_repo = SQLAlchemyUserRepositoryTG(session=session)
             game_repo = RedisGameCacheRepo(redis=redis_helper.get_redis_client())
             game_service = GameServiceTG(game_repo=game_repo, user_repo=user_repo)
             yield game_service

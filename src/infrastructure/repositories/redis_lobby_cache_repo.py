@@ -1,13 +1,13 @@
 from redis.asyncio import Redis
 
 from application.interfaces.cache_lobby_repo_interface import (
-    CacheLobbyRepoInterface,
+    BaseCacheLobbyRepoTG,
 )
 from domain.entities.lobby import Lobby
 from application.schemas.lobby import LobbySchema
 
 
-class RedisLobbyCacheRepo(CacheLobbyRepoInterface):
+class RedisLobbyCacheRepoTG(BaseCacheLobbyRepoTG):
     def __init__(
         self,
         redis: Redis,
@@ -73,8 +73,6 @@ class RedisLobbyCacheRepo(CacheLobbyRepoInterface):
         key = self._get_key(chat_id)
         return await self.redis.exists(key)
 
-
-class RedisLobbyCacheRepoTG(RedisLobbyCacheRepo):
     async def push_starting(self, chat_id: int):
         key = self._get_key(chat_id)
         data = await self.redis.get(key)
