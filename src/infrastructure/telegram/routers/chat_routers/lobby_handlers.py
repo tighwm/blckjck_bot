@@ -42,14 +42,16 @@ async def start_lobby_timer(
 async def handle_cancel(
     message: Message,
     lobby_service: LobbyServiceTG,
+    state: FSMContext,
 ):
     res = await lobby_service.cancel_lobby(message.chat.id)
 
     if not res:
         await message.answer("Начни игру для начала долбоеб.")
         return
-    await message.answer("Набор на игру отменен.")
     timer_manager.cancel_timer(timer_type="lobby:interval", chat_id=message.chat.id)
+    await state.clear()
+    await message.answer("Набор на игру отменен.")
 
 
 @router.message(Command("join"), ChatState.lobby)
@@ -71,14 +73,20 @@ async def handle_join(
 
 
 def get_timeout_arg(text: str):
-    text = text.split()
-    if text[0].isdigit():
-        return int(text[0])
+    if text is not None:
+        text = text.split()
     else:
-        raise ValueError("Text must contain first a int type")
+        return 50
+    if text[0].isdigit():
+        timeout = int(text[0])
+        if 15 < timeout < 600:
+            return timeout
+        return None
+    else:
+        return None
 
 
-@router.message(Command("startgame"), StateFilter(None), flags={"rate_limit": 1.0})
+@router.message(Command("lobby"), StateFilter(None), flags={"rate_limit": 1.0})
 async def handle_start_game(
     message: Message,
     lobby_service: LobbyServiceTG,
@@ -86,16 +94,18 @@ async def handle_start_game(
     command: CommandObject,
 ):
     command_args = command.args
-    try:
-        timeout = get_timeout_arg(command_args)
-    except ValueError:
-        await message.answer("Аргумент времени таймера должен быть числом.")
+    timeout = get_timeout_arg(command_args)
+    if timeout is None:
+        await message.answer(
+            "Аргумент времени таймера должен быть числом, не менее 15 и не более 600 (секунд)."
+        )
         return
 
     chat_id = message.chat.id
     lobby = await lobby_service.create_lobby(
         chat_id=chat_id,
         user_id=message.from_user.id,
+        timeout=timeout,
     )
     if not lobby:
         await message.answer(f"Игра начата и так.")
