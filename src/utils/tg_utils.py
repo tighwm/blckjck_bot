@@ -44,6 +44,7 @@ class PlayerFilter(Filter):
     ) -> bool:
         cur_player_id = int(callback.data.split(":")[1])
         if cur_player_id != callback.from_user.id:
+            await callback.answer("Не твой ход.")
             return False
         return True
 
