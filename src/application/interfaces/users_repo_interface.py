@@ -49,7 +49,7 @@ class UserRepoInterface(ABC):
         pass
 
 
-class TelegramUserRepoMixin(UserRepoInterface):
+class BaseTelegramUserRepo(UserRepoInterface):
     @abstractmethod
     async def get_user_by_tg_id(
         self,
