@@ -24,6 +24,17 @@ router.callback_query.middleware(SaveUserDB())
 router.callback_query.middleware(GameServiceGetter())
 
 
+async def process_not_success(
+    callback: CallbackQuery,
+    err_type: ErrorType,
+):
+    if err_type == ErrorType.PLAYER_NOT_FOUND:
+        await callback.answer(text=f"Ты не в игре")
+    elif err_type == ErrorType.ANOTHER_PLAYER_TURN:
+        await callback.answer(text="Сейчас ходит другой игрок.")
+    return
+
+
 @router.callback_query(
     ChatState.game,
     HitData.filter(),
@@ -41,12 +52,11 @@ async def hit_handler(
     )
 
     if not response.success:
-        if response.type == ErrorType.PLAYER_NOT_FOUND:
-            await callback.answer(text=f"Ты не в игре.")
-        elif response.type == ErrorType.ANOTHER_PLAYER_TURN:
-            await callback.answer(text="Сейчас ходит другой игрок.")
-        return
+        if not response.success:
+            await process_not_success(callback, response.type)
+            return
 
+    await callback.answer()
     player = response.data.get("player")
     next_player = response.data.get("next_player")
 
@@ -54,9 +64,13 @@ async def hit_handler(
         await new_turn_current_player(callback.message, player, game_service)
         return
     elif response.type == SuccessType.HIT_BLACKJACK:
-        await callback.message.edit_text(text=format_player_info(player, "блекджек."))
+        await callback.message.edit_text(
+            text=format_player_info(player, "блек-джек."),
+        )
     elif response.type == SuccessType.HIT_BUSTED:
-        await callback.message.edit_text(text=format_player_info(player, "перебор."))
+        await callback.message.edit_text(
+            text=format_player_info(player, "перебор."),
+        )
 
     if next_player is None:
         return
@@ -80,12 +94,10 @@ async def stand_handler(
     )
 
     if not response.success:
-        if response.type == ErrorType.PLAYER_NOT_FOUND:
-            await callback.answer(text=f"Ты не в игре")
-        elif response.type == ErrorType.ANOTHER_PLAYER_TURN:
-            await callback.answer(text="Сейчас ходит другой игрок.")
+        await process_not_success(callback, response.type)
         return
 
+    await callback.answer()
     player = response.data.get("player")
     await callback.message.answer(f"Игрок {player.get("player_name")} воздержался😂😂")
 
