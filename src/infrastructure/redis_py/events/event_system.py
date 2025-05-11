@@ -9,7 +9,7 @@ from aiogram import Bot
 from application.services import GameServiceTG
 from application.services.timer_mng import timer_manager
 from application.schemas import LobbySchema
-from utils.tg_utils import game_btns, format_player_info
+from utils.tg_utils import pass_turn_next_player
 from infrastructure.database.models.db_helper import db_helper
 from infrastructure.repositories import RedisGameCacheRepo, SQLAlchemyUserRepository
 from infrastructure.redis_py.redis_helper import redis_helper
@@ -240,7 +240,7 @@ class GameDealerListener(StreamListener):
         )
         msg = await self.bot.send_message(chat_id=chat_id, text=dealer_text)
 
-        # (не)красиво расскрываем вторую карту дилера
+        # (не)красиво раскрываем вторую карту дилера
         secret_card = dealer.get("secret_card")
         effects = ["**", "*", secret_card]
         score = dealer.get("score")
@@ -256,11 +256,12 @@ class GameDealerListener(StreamListener):
             )
             await msg.edit_text(text=dealer_text)
 
-        # если у дилера блекджек - запускаем событие приведения результатов игры
+        # если у дилера блек-джек - запускаем событие приведения результатов игры
         if score_with_secret == 21:
-            await msg.answer("У дилера блекджек, все сосут. Доделать конец игры надо.")
-            return
-            # await self.game_service.ending_game(chat_id)
+            await msg.answer(
+                "У дилера блек-джек. Сейчас будут приведены результаты игры."
+            )
+            await game_service.ending_game(chat_id)
 
         player = response.get("player")
         if player is None:
@@ -268,19 +269,7 @@ class GameDealerListener(StreamListener):
             # дернуть взятие карт дилера, раз нет следующего игрока на ход.
             await game_service.game_repo.push_dealer(chat_id, "turns")
             return
-        player_id = player.get("player_id")
-        msg = await msg.answer(
-            text=format_player_info(player_data=player),
-            reply_markup=game_btns(player_id),
-        )
-        timer_manager.create_timer(
-            "game:turn",
-            chat_id,
-            game_service.kick_afk,
-            player_id,
-            30,
-            msg,
-        )
+        await pass_turn_next_player(msg, player, game_service)
 
     @with_game_service(False)
     async def _dealer_make_turns(
@@ -294,7 +283,8 @@ class GameDealerListener(StreamListener):
             await game_service.game_repo.push_ending(chat_id)
             return
         msg = await self.bot.send_message(
-            chat_id=chat_id, text="Дилер берет карты до 17 очков."
+            chat_id=chat_id,
+            text="Дилер берет карты до 17 очков.",
         )
         await asyncio.sleep(1.5)
 
@@ -316,7 +306,7 @@ class GameDealerListener(StreamListener):
             f"У дилера {dealer_res}\n"
             f"Очки: {final_score}\n"
             f"Карты: {final_cards}.\n"
-            f"Сейчас будут приведены результаты игры (нет)"
+            f"Сейчас будут приведены результаты игры."
         )
         await msg.edit_text(text=text)
 
