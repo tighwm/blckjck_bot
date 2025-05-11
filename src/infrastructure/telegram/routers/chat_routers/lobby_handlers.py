@@ -1,6 +1,6 @@
 from aiogram import Router
 from aiogram.fsm.context import FSMContext
-from aiogram.filters import Command, StateFilter
+from aiogram.filters import Command, StateFilter, CommandObject
 from aiogram.types import Message
 
 from application.services import LobbyServiceTG
@@ -70,12 +70,28 @@ async def handle_join(
     )
 
 
+def get_timeout_arg(text: str):
+    text = text.split()
+    if text[0].isdigit():
+        return int(text[0])
+    else:
+        raise ValueError("Text must contain first a int type")
+
+
 @router.message(Command("startgame"), StateFilter(None), flags={"rate_limit": 1.0})
 async def handle_start_game(
     message: Message,
     lobby_service: LobbyServiceTG,
     state: FSMContext,
+    command: CommandObject,
 ):
+    command_args = command.args
+    try:
+        timeout = get_timeout_arg(command_args)
+    except ValueError:
+        await message.answer("Аргумент времени таймера должен быть числом.")
+        return
+
     chat_id = message.chat.id
     lobby = await lobby_service.create_lobby(
         chat_id=chat_id,
