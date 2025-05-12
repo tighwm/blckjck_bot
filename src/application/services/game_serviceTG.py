@@ -1,15 +1,15 @@
 from aiogram.types import Message
 
+from application.interfaces import BaseTelegramUserRepo, CacheGameRepoInterface
 from application.schemas import GameSchema, LobbySchema, UserPartial
 from application.services.timer_mng import timer_manager
-from infrastructure.repositories import RedisGameCacheRepo, SQLAlchemyUserRepositoryTG
 from domain.entities import Lobby, Game, Player, PlayerResult
 from domain.types.game import SuccessType, GameResult
 from utils.tg_utils import game_btns
 
 
 async def apply_players_amount(
-    user_repo: SQLAlchemyUserRepositoryTG,
+    user_repo: BaseTelegramUserRepo,
     players: list[dict],
 ):
     if not players:
@@ -26,8 +26,8 @@ async def apply_players_amount(
 class GameServiceTG:
     def __init__(
         self,
-        game_repo: RedisGameCacheRepo,
-        user_repo: SQLAlchemyUserRepositoryTG | None = None,
+        game_repo: CacheGameRepoInterface,
+        user_repo: BaseTelegramUserRepo | None = None,
     ):
         self.game_repo = game_repo
         self.user_repo = user_repo
