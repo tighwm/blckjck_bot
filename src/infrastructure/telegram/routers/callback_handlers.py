@@ -32,7 +32,6 @@ async def process_not_success(
         await callback.answer(text=f"Ты не в игре")
     elif err_type == ErrorType.ANOTHER_PLAYER_TURN:
         await callback.answer(text="Сейчас ходит другой игрок.")
-    return
 
 
 @router.callback_query(

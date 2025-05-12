@@ -19,7 +19,7 @@ router.message.middleware(SaveUserDB())
 router.message.middleware(LobbyServiceGetter())
 
 
-async def start_lobby_timer(
+async def start_update_lobby_text_timer(
     message: Message,
     timeout: int,
     players: str,
@@ -46,7 +46,7 @@ async def handle_cancel(
 ):
     res = await lobby_service.cancel_lobby(message.chat.id)
 
-    if not res:
+    if res is False:
         await message.answer("Начни игру для начала долбоеб.")
         return
     timer_manager.cancel_timer(timer_type="lobby:interval", chat_id=message.chat.id)
@@ -112,4 +112,9 @@ async def handle_start_game(
         return
 
     await state.set_state(ChatState.lobby)
-    await start_lobby_timer(message, timeout, lobby.str_users(), lobby_service)
+    await start_update_lobby_text_timer(
+        message,
+        timeout,
+        lobby.str_users(),
+        lobby_service,
+    )

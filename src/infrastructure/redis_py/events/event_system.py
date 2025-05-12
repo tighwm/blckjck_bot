@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from typing import Any, Callable, Coroutine, TypeVar
 from functools import partial, wraps
 from contextlib import asynccontextmanager
@@ -16,6 +17,8 @@ from infrastructure.redis_py.redis_helper import redis_helper
 
 T = TypeVar("T")
 TaskFunc = Callable[..., Coroutine[Any, Any, T]]
+
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -62,10 +65,10 @@ class TaskQueue:
                 await task_func()
                 self.queue.task_done()
             except Exception as e:
-                import traceback
-
-                print(f"Error executing task: {e}")
-                traceback.print_exc()
+                logger.error(
+                    "Error executing task: %s\n%r",
+                    e,
+                )
 
     async def start(self):
         for _ in range(self.max_workers):

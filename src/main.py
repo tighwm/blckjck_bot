@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import sys
 
 from aiogram import Bot
 from aiogram.fsm.storage.redis import RedisStorage
@@ -12,9 +11,11 @@ from infrastructure.telegram.routers import routers
 from infrastructure.redis_py.events.event_system import EventSystemTG
 from infrastructure.redis_py.redis_helper import redis_helper
 
-# from utils.logger import setup_logger
+from utils.logger import configure_logger
 
 fsm_redis_storage = RedisStorage.from_url(str(settings.redis.url))
+
+logger = logging.getLogger(__name__)
 
 aiogram_bot = AiogramBot(
     bot=Bot(
@@ -31,14 +32,8 @@ tg_event_sys = EventSystemTG(
 
 
 async def main():
-    # logger = setup_logger(
-    #     name=__name__,
-    #     # log_file="logs/.log",
-    #     level="info",
-    #     detailed=True,
-    # )
-    # logger.info("Logger was configured")
-    logging.basicConfig(level=logging.INFO, stream=sys.stdout)
+    configure_logger(filename="bot-logs/bot.log", level=logging.WARNING)
+    logger.info("Logger was configured.")
     aiogram_bot.dp.include_router(routers)
     event_sys_task = asyncio.create_task(tg_event_sys.start())
     await asyncio.sleep(1)
