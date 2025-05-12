@@ -37,6 +37,13 @@ class CacheLobbyRepoInterface(ABC):
         """Проверить существование лобби"""
         pass
 
+    @abstractmethod
+    def with_lock(
+        self,
+        chat_id: int,
+    ):
+        pass
+
 
 class BaseCacheLobbyRepoTG(CacheLobbyRepoInterface):
     @abstractmethod

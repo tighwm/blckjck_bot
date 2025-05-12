@@ -35,9 +35,17 @@ class UserRepoInterface(ABC):
         self,
         user: UserModel,
         data_update: UserPartial | UserUpdate,
-        partitial: bool = False,
+        partial: bool = False,
     ) -> UserSchema:
         """Обновить полностью либо частично"""
+        pass
+
+    @abstractmethod
+    async def update_users(
+        self,
+        datas_update: dict[UserModel, UserUpdate | UserPartial],
+        partial: bool = False,
+    ):
         pass
 
     @abstractmethod
@@ -54,5 +62,14 @@ class BaseTelegramUserRepo(UserRepoInterface):
     async def get_user_by_tg_id(
         self,
         tg_id: int,
+        schema: bool = True,
     ) -> UserSchema | None:
+        pass
+
+    @abstractmethod
+    async def get_users_by_tg_ids(
+        self,
+        tg_ids: list[int],
+        schema: bool = True,
+    ):
         pass
