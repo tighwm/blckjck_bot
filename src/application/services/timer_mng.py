@@ -26,17 +26,14 @@ class EventTimer:
         try:
             await self.event()
         except Exception as e:
-            logger.error("Ошибка таймера id=%s: %s", self.id, e)
-            import traceback
-
-            traceback.print_exc()
+            logger.error("EventTimer error id=%s: %s", self.id, e)
 
     def start(self):
         self._task = asyncio.create_task(self._timer_start())
 
     def cancel(self):
         if self._task is None:
-            logger.warning("Таймер id=%s еще не запущен, чтобы его отменять", self.id)
+            logger.warning("Timer id=%s not found.", self.id)
             return
         self._task.cancel()
 
@@ -60,6 +57,7 @@ class IntervalEventTimer(EventTimer):
     async def _timer_start(self):
         remaining_time = self.timeout
 
+        err_count = 0
         while remaining_time > self.interval:
             await asyncio.sleep(self.interval)
             remaining_time -= self.interval
@@ -67,10 +65,14 @@ class IntervalEventTimer(EventTimer):
             try:
                 await self.event(remaining_time=remaining_time)
             except Exception as e:
-                logger.error("Ошибка интервал таймера id=%s: %s", self.id, e)
-                import traceback
-
-                traceback.print_exc()
+                err_count += 1
+                logger.error(
+                    "IntervalTimer error while executing event id=%s: %s",
+                    self.id,
+                    e,
+                )
+                if err_count == 2:
+                    break
 
 
 class TimersManager:
