@@ -44,8 +44,12 @@ class LobbyServiceTG:
         message: Message,
         remaining_time: int,
     ):
+        if remaining_time == 0:
+            await message.delete()
         chat_id = message.chat.id
         lobby_schema = await self.lobby_repo.get_lobby(chat_id)
+        if lobby_schema is None:
+            raise ValueError("Lobby schema can't be None")
         text = (
             f"Запущено лобби на игру.\n"
             f"Игроки: {lobby_schema.str_users()}\n"
