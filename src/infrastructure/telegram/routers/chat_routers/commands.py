@@ -33,3 +33,9 @@ async def handle_profile(
         return
     text = format_user_profile(res)
     await message.answer(text)
+
+
+@router.message(Command("help"))
+async def handle_help(message: Message):
+    text = "Команда /lobby [секунд] к началу игры. (квадратные скобки не нужны)"
+    await message.answer(text)
