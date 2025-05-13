@@ -5,22 +5,7 @@ from application.schemas import GameSchema, LobbySchema, UserPartial
 from application.services.timer_mng import timer_manager
 from domain.entities import Lobby, Game, Player, PlayerResult
 from domain.types.game import SuccessType, GameResult
-from utils.tg_utils import game_btns
-
-
-async def apply_players_amount(
-    user_repo: BaseTelegramUserRepo,
-    players: list[dict],
-):
-    if not players:
-        return
-    amounts = {player["player_id"]: player.get("amount") for player in players}
-    users_list = await user_repo.get_users_by_tg_ids(tg_ids=list(amounts.keys()))
-    users_update = {}
-    for user in users_list:
-        amount = amounts.get(user.tg_id)
-        users_update[user] = UserPartial(balance=user.balance + amount)
-    await user_repo.update_users(datas_update=users_update, partial=True)
+from utils.tg_utils import pass_turn_next_player
 
 
 class GameServiceTG:
@@ -31,6 +16,22 @@ class GameServiceTG:
     ):
         self.game_repo = game_repo
         self.user_repo = user_repo
+
+    async def apply_players_amount(
+        self,
+        players: list[dict],
+    ):
+        if not players:
+            return
+        amounts = {player["player_id"]: player.get("amount") for player in players}
+        users_list = await self.user_repo.get_users_by_tg_ids(
+            tg_ids=list(amounts.keys())
+        )
+        users_update = {}
+        for user in users_list:
+            amount = amounts.get(user.tg_id)
+            users_update[user] = UserPartial(balance=user.balance + amount)
+        await self.user_repo.update_users(datas_update=users_update, partial=True)
 
     async def kick_afk(
         self,
@@ -252,7 +253,7 @@ class GameServiceTG:
         push = res.get("push")
 
         players = wins + push
-        await apply_players_amount(user_repo=self.user_repo, players=players)
+        await self.apply_players_amount(players=players)
 
         await self.game_repo.delete_cache_game(chat_id)
         return res
