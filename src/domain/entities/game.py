@@ -124,14 +124,16 @@ class Game:
 
         return data
 
-    def get_current_turn_player(self):
+    def get_current_turn_player(self, data: bool = False):
         try:
             player = self.players.get(self.turn_order[self.current_player_index])
         except IndexError:
             return None
+        if data:
+            return self._get_player_data(player)
         return player
 
-    def next_player(self) -> Player | None:
+    def next_player(self, data: bool = False) -> Player | dict | None:
         self.current_player_index += 1
         player = self.get_current_turn_player()
 
@@ -139,9 +141,31 @@ class Game:
             return None
 
         if player.result is None:
+            if data:
+                return self._get_player_data(player)
             return player
 
         return self.next_player()
+
+    def _get_non_bid_players(self) -> list[Player]:
+        non_bid = []
+        for player in self.players.values():
+            if player.bid == 0:
+                non_bid.append(player)
+        return non_bid
+
+    def set_out_for_player(self, player_id: int):
+        player = self._get_player_by_id(player_id)
+        player.result = PlayerResult.OUT
+        return self._get_player_data(player)
+
+    def set_out_for_non_bid_players(self):
+        not_bid_players = self._get_non_bid_players()
+        data_players = []
+        for player in not_bid_players:
+            player.result = PlayerResult.OUT
+            data_players.append(self._get_player_data(player))
+        return data_players
 
     def player_bid(
         self,
