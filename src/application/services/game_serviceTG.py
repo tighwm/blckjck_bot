@@ -75,31 +75,30 @@ class GameServiceTG:
         game_schema = await self.game_repo.get_game(chat_id)
         if game_schema is None:
             return
-
         game = Game.from_dto(game_schema)
-        count_out = 0
-        players = game.players.values()
 
-        if count_out == len(players):
-            await message.answer("Все игроки были исключены.")
-            await self.game_repo.delete_cache_game(chat_id)
-            return
+        players_data = game.set_out_for_non_bid_players()
+        if players_data:
+            if len(players_data) > 1:
+                start_text = "Игроки "
+                end_text = " исключены за бездействие"
+            else:
+                start_text = "Игрок "
+                end_text = " исключен за бездействие"
+            players_name = [
+                player_data.get("player_name") for player_data in players_data
+            ]
+            text = start_text + ", ".join(players_name) + end_text
+            await message.answer(text)
 
-        cur_player = game.get_current_turn_player()
-        if cur_player.result is not None:
-            cur_player = game.next_player()
+        cur_player = game.get_current_turn_player(data=True)
+        if cur_player.get("result") is not None:
+            cur_player = game.next_player(data=True)
 
-        msg = await message.answer(
-            text=f"Ход игрока {cur_player.username}",
-            reply_markup=game_btns(player_id=cur_player.tg_id),
-        )
-        timer_manager.create_timer(
-            "game:turn",
-            chat_id,
-            self.kick_afk,
-            cur_player.tg_id,
-            30,
-            msg,
+        await pass_turn_next_player(
+            message=message,
+            player=cur_player,
+            game_service=self,
         )
         await self.game_repo.set_game_state(chat_id)
         await self.game_repo.cache_game(game)
