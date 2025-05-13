@@ -85,6 +85,7 @@ async def pass_turn_next_player(
         player_id,
         30,
         msg,
+        player_id,
     )
 
 
@@ -106,4 +107,5 @@ async def new_turn_current_player(
         player_id,
         30,
         message,
+        player_id,
     )
