@@ -3,7 +3,7 @@ from aiogram.types import Message
 from application.interfaces import BaseTelegramUserRepo, CacheGameRepoInterface
 from application.schemas import GameSchema, LobbySchema, UserPartial
 from application.services.timer_mng import timer_manager
-from domain.entities import Lobby, Game, Player, PlayerResult
+from domain.entities import Lobby, Game, Player
 from domain.types.game import SuccessType, GameResult
 from utils.tg_utils import pass_turn_next_player
 
@@ -36,18 +36,20 @@ class GameServiceTG:
     async def kick_afk(
         self,
         message: Message,
+        player_id: int,
     ):
         chat_id = message.chat.id
         game_schema = await self.game_repo.get_game(chat_id)
         if game_schema is None:
             return
         game = Game.from_dto(game_schema)
+        player = game.set_out_for_player(player_id)
 
-        player = game.get_current_turn_player()
-        player.result = PlayerResult.OUT
-        await message.answer(f"Игрок {player.username} исключен за бездействие.")
+        await message.answer(
+            f"Игрок {player.get("player_name")} исключен за бездействие."
+        )
 
-        next_player = game.next_player()
+        next_player = game.next_player(data=True)
         if next_player is None:
             await message.answer(f"Ход переходит дилеру.")
             action = "reveal" if game.current_round == 1 else "turns"
@@ -57,9 +59,10 @@ class GameServiceTG:
             )
             return
 
-        await message.answer(
-            text=f"Ход игрока {next_player.username}",
-            reply_markup=game_btns(player_id=next_player.tg_id),
+        await pass_turn_next_player(
+            message=message,
+            player=next_player,
+            game_service=self,
         )
         await self.game_repo.cache_game(game)
 
