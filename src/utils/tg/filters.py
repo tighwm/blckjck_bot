@@ -18,15 +18,15 @@ class PlayerFilter(Filter):
         return True
 
 
-class GroupFilter(Filter):
-    def __init__(self):
-        pass
+class ChatTypeFilter(Filter):
+    def __init__(self, chat_types: list[str]):
+        self.chat_types = chat_types
 
-    def __call__(
+    async def __call__(
         self,
         event: Message | CallbackQuery,
     ):
-        return event.chat.type in ("group", "supergroup")
+        return event.chat.type in self.chat_types
 
 
 class StandData(CallbackData, prefix="stand"):

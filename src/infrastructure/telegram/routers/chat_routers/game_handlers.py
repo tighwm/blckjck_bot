@@ -7,7 +7,7 @@ from aiogram.fsm.context import FSMContext
 
 from domain.types.game import SuccessType
 from infrastructure.telegram.routers.states import ChatState
-from utils.tg.filters import GroupFilter
+from utils.tg.filters import ChatTypeFilter
 from utils.tg.functions import pass_turn_next_player
 from infrastructure.telegram.middlewares import GameServiceGetter, AntiFlood
 
@@ -47,7 +47,7 @@ async def the_deal_process(
 
 
 @router.message(
-    GroupFilter(),
+    ChatTypeFilter(["group", "supergroup"]),
     filters_on_bid,
     ChatState.bid,
 )
