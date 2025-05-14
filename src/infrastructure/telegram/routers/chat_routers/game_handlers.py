@@ -7,7 +7,8 @@ from aiogram.fsm.context import FSMContext
 
 from domain.types.game import SuccessType
 from infrastructure.telegram.routers.states import ChatState
-from utils.tg_utils import pass_turn_next_player
+from utils.tg.filters import GroupFilter
+from utils.tg.functions import pass_turn_next_player
 from infrastructure.telegram.middlewares import GameServiceGetter, AntiFlood
 
 if TYPE_CHECKING:
@@ -30,7 +31,10 @@ def format_dealer_cards_text(dealer_data: dict) -> str:
     )
 
 
-async def the_deal_process(message: Message, deal_data: list[dict]):
+async def the_deal_process(
+    message: Message,
+    deal_data: list[dict],
+):
     await message.answer("Первая раздача карт игрокам.")
     for player in deal_data:
         text = (
@@ -42,7 +46,11 @@ async def the_deal_process(message: Message, deal_data: list[dict]):
         await asyncio.sleep(1)
 
 
-@router.message(filters_on_bid, ChatState.bid)
+@router.message(
+    GroupFilter(),
+    filters_on_bid,
+    ChatState.bid,
+)
 async def bid_handle(
     message: Message,
     state: FSMContext,

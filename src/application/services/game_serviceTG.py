@@ -5,7 +5,7 @@ from application.schemas import GameSchema, LobbySchema, UserPartial
 from application.services.timer_mng import timer_manager
 from domain.entities import Lobby, Game, Player
 from domain.types.game import SuccessType, GameResult
-from utils.tg_utils import pass_turn_next_player
+from utils.tg.functions import pass_turn_next_player
 
 
 class GameServiceTG:

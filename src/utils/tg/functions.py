@@ -1,26 +1,17 @@
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from aiogram.types import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
-    CallbackQuery,
     Message,
 )
-from aiogram.filters import Filter
-from aiogram.filters.callback_data import CallbackData
 
+from application.schemas import UserSchema
 from application.services.timer_mng import timer_manager
+from utils.tg.filters import StandData, HitData
 
 if TYPE_CHECKING:
     from application.services import GameServiceTG
-
-
-class HitData(CallbackData, prefix="hit"):
-    cur_player_id: int
-
-
-class StandData(CallbackData, prefix="stand"):
-    cur_player_id: int
 
 
 def game_btns(player_id: int):
@@ -34,21 +25,6 @@ def game_btns(player_id: int):
     return markup
 
 
-class PlayerFilter(Filter):
-    def __init__(self, lol):
-        self.kek = lol
-
-    async def __call__(
-        self,
-        callback: CallbackQuery,
-    ) -> bool:
-        cur_player_id = int(callback.data.split(":")[1])
-        if cur_player_id != callback.from_user.id:
-            await callback.answer("Не твой ход.")
-            return False
-        return True
-
-
 def format_player_info(
     player_data: dict,
     additionally: str | None = None,
@@ -60,11 +36,8 @@ def format_player_info(
     )
 
 
-def format_user_profile(user_data: dict[str, Any]) -> str:
-    return (
-        f"Профиль юзера {user_data.get("username")}\n"
-        f"Баланс: {user_data.get("balance")}"
-    )
+def format_user_profile(user_schema: UserSchema) -> str:
+    return f"Профиль юзера {user_schema.username}\n" f"Баланс: {user_schema.balance}"
 
 
 async def pass_turn_next_player(

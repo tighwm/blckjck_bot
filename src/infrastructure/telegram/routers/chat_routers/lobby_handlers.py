@@ -11,7 +11,7 @@ from infrastructure.telegram.middlewares import (
     LobbyServiceGetter,
     AntiFlood,
 )
-
+from utils.tg.filters import GroupFilter
 
 router = Router()
 router.message.middleware(AntiFlood())
@@ -38,7 +38,11 @@ async def start_update_lobby_text_timer(
     )
 
 
-@router.message(Command("cancel"), ChatState.lobby)
+@router.message(
+    GroupFilter(),
+    Command("cancel"),
+    ChatState.lobby,
+)
 async def handle_cancel(
     message: Message,
     lobby_service: LobbyServiceTG,
@@ -54,7 +58,11 @@ async def handle_cancel(
     await message.answer("Набор на игру отменен.")
 
 
-@router.message(Command("join"), ChatState.lobby)
+@router.message(
+    GroupFilter(),
+    Command("join"),
+    ChatState.lobby,
+)
 async def handle_join(
     message: Message,
     lobby_service: LobbyServiceTG,
@@ -86,8 +94,13 @@ def get_timeout_arg(text: str):
         return None
 
 
-@router.message(Command("lobby"), StateFilter(None), flags={"rate_limit": 1.0})
-async def handle_start_game(
+@router.message(
+    GroupFilter(),
+    Command("lobby"),
+    StateFilter(None),
+    flags={"rate_limit": 1.0},
+)
+async def handle_lobby(
     message: Message,
     lobby_service: LobbyServiceTG,
     state: FSMContext,

@@ -10,7 +10,7 @@ from aiogram import Bot
 from application.services import GameServiceTG
 from application.services.timer_mng import timer_manager
 from application.schemas import LobbySchema
-from utils.tg_utils import pass_turn_next_player
+from utils.tg.functions import pass_turn_next_player
 from infrastructure.database.models.db_helper import db_helper
 from infrastructure.repositories import RedisGameCacheRepo, SQLAlchemyUserRepositoryTG
 from infrastructure.redis_py.redis_helper import redis_helper

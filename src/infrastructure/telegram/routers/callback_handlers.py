@@ -8,10 +8,8 @@ from infrastructure.telegram.middlewares import (
 )
 from infrastructure.telegram.routers.states import ChatState
 from application.services import GameServiceTG
-from utils.tg_utils import (
-    PlayerFilter,
-    HitData,
-    StandData,
+from utils.tg.filters import PlayerFilter, StandData, HitData
+from utils.tg.functions import (
     pass_turn_next_player,
     format_player_info,
     new_turn_current_player,

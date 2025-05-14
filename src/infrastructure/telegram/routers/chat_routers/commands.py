@@ -8,7 +8,7 @@ from infrastructure.telegram.middlewares import (
     UserServiceGetter,
 )
 from application.services import UserService
-from utils.tg_utils import format_user_profile
+from utils.tg.functions import format_user_profile
 
 router = Router()
 router.message.middleware(AntiFlood())
