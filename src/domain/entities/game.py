@@ -116,6 +116,8 @@ class Game:
     def the_deal(self):
         data = []
         for player in self.players.values():
+            if player.result == PlayerResult.OUT:
+                continue
             player.cards.append(self.deck.pop())
             player.cards.append(self.deck.pop())
             if player.has_blackjack():
