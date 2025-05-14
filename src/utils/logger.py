@@ -1,3 +1,4 @@
+import sys
 import logging
 
 LOG_DEFAULT_FORMAT = (
@@ -6,12 +7,18 @@ LOG_DEFAULT_FORMAT = (
 
 
 def configure_logger(
-    filename: str,
+    filename: str | None = None,
     level: int = logging.INFO,
     format: str = LOG_DEFAULT_FORMAT,
 ):
+    if filename:
+        return logging.basicConfig(
+            level=level,
+            format=format,
+            filename=filename,
+        )
     return logging.basicConfig(
         level=level,
         format=format,
-        filename=filename,
+        stream=sys.stdout,
     )
