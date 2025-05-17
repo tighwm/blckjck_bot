@@ -84,7 +84,7 @@ def get_timeout_arg(text: str):
         return 50
     if text[0].isdigit():
         timeout = int(text[0])
-        if 15 < timeout < 600:
+        if 15 <= timeout <= 600:
             return timeout
         return None
     else:
