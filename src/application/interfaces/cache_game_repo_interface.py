@@ -36,3 +36,7 @@ class CacheGameRepoInterface(ABC):
     @abstractmethod
     async def push_ending(self, chat_id: int):
         pass
+
+    @abstractmethod
+    def with_lock(self, chat_id: int):
+        pass

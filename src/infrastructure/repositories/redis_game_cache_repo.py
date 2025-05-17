@@ -79,3 +79,10 @@ class RedisGameCacheRepo(CacheGameRepoInterface):
             name=self.ending_stream_key,
             fields={"chat_id": str(chat_id)},
         )
+
+    def with_lock(self, chat_id: int):
+        return self.redis.lock(
+            name=f"game-lock:{chat_id}",
+            timeout=3,
+            blocking_timeout=5,
+        )
