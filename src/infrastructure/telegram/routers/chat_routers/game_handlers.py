@@ -1,21 +1,21 @@
 from typing import TYPE_CHECKING
-import asyncio
 
 from aiogram import Router, F
 from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 
-from domain.types.game import SuccessType
+from application.services.game_serviceTG import ResponseType
 from infrastructure.telegram.routers.states import ChatState
 from utils.tg.filters import ChatTypeFilter
 from utils.tg.functions import pass_turn_next_player
-from infrastructure.telegram.middlewares import GameServiceGetter, AntiFlood
+from infrastructure.telegram.middlewares import GameServiceGetter, AntiFlood, SaveUserDB
 
 if TYPE_CHECKING:
     from application.services import GameServiceTG
 
 router = Router()
 router.message.middleware(AntiFlood())
+router.message.middleware(SaveUserDB())
 router.message.middleware(GameServiceGetter())
 
 # Регулярное выражение для фильтрации ставок от 1 и без чувствительности к регистру
@@ -31,19 +31,30 @@ def format_dealer_cards_text(dealer_data: dict) -> str:
     )
 
 
-async def the_deal_process(
-    message: Message,
-    deal_data: list[dict],
-):
-    await message.answer("Первая раздача карт игрокам.")
+def text_deal_process(
+    data: dict,
+) -> str:
+    deal_data = data.get("the_deal")
+    text = "Первая раздача карт игрокам.\n"
     for player in deal_data:
-        text = (
+        text += (
             f"Карты игрока {player.get("player_name")}\n"
             f"{player.get("cards")} {"" if player.get("result") is None else " Блекджек💀"}\n"
-            f"Очки: {player.get("score")}\n"
+            f"Очки: {player.get("score")}\n \n"
         )
-        await message.answer(text)
-        await asyncio.sleep(1)
+    dealer_text = format_dealer_cards_text(data.get("dealer"))
+    text += dealer_text
+    return text
+
+
+async def process_not_success(
+    message: Message,
+    err_type: ResponseType,
+):
+    if err_type == ResponseType.BID_DENIED:
+        await message.answer("Копейки пересчитай /profile")
+    elif err_type == ResponseType.PLAYER_NOT_FOUND:
+        await message.answer("Ты не в игре.")
 
 
 @router.message(
@@ -58,7 +69,7 @@ async def bid_handle(
 ):
     user_bid = int(message.text.split()[1])  # Получаем ставку из "ставка (число)"
     if user_bid < 5:
-        await message.answer("Ставка не дожна быть менее 5")
+        await message.answer("Ставка не должна быть менее 5")
         return
 
     response = await game_service.player_set_bid(
@@ -67,18 +78,17 @@ async def bid_handle(
         bid=user_bid,
     )
     if response is None:
-        await message.answer("Копейки пересчитай свои.")
-        return
+        return await message.answer("Response is None.")
+    elif response.success is False:
+        await process_not_success(message, response.type)
 
-    if response.type == SuccessType.BID_ACCEPTED:
+    if response.type == ResponseType.BID_ACCEPTED:
         await message.answer("Ставка принята.")
-    elif response.type == SuccessType.ALL_PLAYERS_BET:
+    if response.data.get("all_bets"):
         await state.set_state(ChatState.game)
 
-        await the_deal_process(message, response.data.get("the_deal"))
-
-        dealer_text = format_dealer_cards_text(response.data.get("dealer"))
-        await message.answer(text=dealer_text)
+        text = text_deal_process(response.data)
+        await message.answer(text=text)
 
         player = response.data.get("player")
         await pass_turn_next_player(message, player, game_service)
