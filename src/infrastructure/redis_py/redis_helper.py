@@ -6,7 +6,7 @@ from infrastructure.config import settings
 class RedisHelper:
     def __init__(
         self,
-        max_connections: int = 25,
+        max_connections: int = 50,
     ):
         self.pool = ConnectionPool(
             max_connections=max_connections,
