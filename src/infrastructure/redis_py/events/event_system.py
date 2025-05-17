@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def game_service_getter(with_user_repo: bool = False):
     if with_user_repo:
-        async with db_helper.session_getter() as session:
+        async with db_helper.ctx_session_getter() as session:
             user_repo = SQLAlchemyUserRepositoryTG(session=session)
             game_repo = RedisGameCacheRepo(redis=redis_helper.get_redis_client())
             game_service = GameServiceTG(game_repo=game_repo, user_repo=user_repo)
@@ -159,163 +159,6 @@ class GameStartingListener(StreamListener):
         )
 
 
-class GameEndingListener(StreamListener):
-    def __init__(
-        self,
-        redis: Redis,
-        task_queue: TaskQueue,
-        bot: Bot,
-    ):
-        super().__init__(redis, "game:ending", task_queue)
-        self.bot = bot
-
-    async def process_message(
-        self,
-        msg_id: bytes,
-        data: dict[bytes, bytes],
-    ):
-        chat_id = int(data[b"chat_id"])
-
-        await self.task_queue.add_task(
-            self._result_of_end_game,
-            chat_id=chat_id,
-        )
-
-    @with_game_service(True)
-    async def _result_of_end_game(self, chat_id: int, game_service: GameServiceTG):
-        response = await game_service.ending_game(chat_id)
-        win_players = response.get("wins")
-        push_players = response.get("push")
-        lose_players = response.get("lose")
-
-        text = ""
-        if win_players:
-            win_player_names = [player.get("player_name") for player in win_players]
-            text = text + f"Выиграли у крупье: {', '.join(win_player_names)}\n"
-        if push_players:
-            push_player_names = [player.get("player_name") for player in push_players]
-            text = text + f"В ничью сыграли: {', '.join(push_player_names)}\n"
-        if lose_players:
-            lose_player_names = [player.get("player_name") for player in lose_players]
-            text = text + f"Проиграли ставку: {', '.join(lose_player_names)}"
-
-        await self.bot.send_message(chat_id=chat_id, text=text)
-
-
-class GameDealerListener(StreamListener):
-    def __init__(
-        self,
-        redis: Redis,
-        task_queue: TaskQueue,
-        bot: Bot,
-    ):
-        super().__init__(redis, "game:dealer", task_queue)
-        self.bot = bot
-
-    async def process_message(
-        self,
-        msg_id: bytes,
-        data: dict[bytes, bytes],
-    ):
-        chat_id = int(data[b"chat_id"])
-        action = data[b"action"].decode("utf-8")
-
-        await asyncio.sleep(1)
-        if action == "reveal":
-            await self.task_queue.add_task(self._dealer_reveal_secret, chat_id=chat_id)
-        elif action == "turns":
-            await self.task_queue.add_task(self._dealer_make_turns, chat_id=chat_id)
-
-    @with_game_service(False)
-    async def _dealer_reveal_secret(
-        self,
-        chat_id: int,
-        game_service: GameServiceTG,
-    ):
-        # получаем данные дилера и неявно инициализируем второй круг ходов для игры
-        response = await game_service.dealer_reveal_secret(chat_id)
-        dealer = response.get("dealer")
-        dealer_text = (
-            f"Дилер раскрывает вторую карту...\n"
-            f"Первая: {dealer.get("first_card")}\n"
-            f"Вторая: ***\n"
-            f"Очки: {dealer.get("score")}"
-        )
-        msg = await self.bot.send_message(chat_id=chat_id, text=dealer_text)
-
-        # (не)красиво раскрываем вторую карту дилера
-        secret_card = dealer.get("secret_card")
-        effects = ["**", "*", secret_card]
-        score = dealer.get("score")
-        score_with_secret = dealer.get("score_with_secret")
-        for eff in effects:
-            await asyncio.sleep(1)
-            view_score = score if eff != secret_card else score_with_secret
-            dealer_text = (
-                f"Дилер раскрывает вторую карту...\n"
-                f"Первая: {dealer.get("first_card")}\n"
-                f"Вторая: {eff}\n"
-                f"Очки: {view_score}"
-            )
-            await msg.edit_text(text=dealer_text)
-
-        # если у дилера блек-джек - запускаем событие приведения результатов игры
-        if score_with_secret == 21:
-            await msg.answer(
-                "У дилера блек-джек. Сейчас будут приведены результаты игры."
-            )
-            await game_service.ending_game(chat_id)
-
-        player = response.get("player")
-        if player is None:
-            await msg.answer("эх.")
-            # дернуть взятие карт дилера, раз нет следующего игрока на ход.
-            await game_service.game_repo.push_dealer(chat_id, "turns")
-            return
-        await pass_turn_next_player(msg, player, game_service)
-
-    @with_game_service(False)
-    async def _dealer_make_turns(
-        self,
-        chat_id: int,
-        game_service: GameServiceTG,
-    ):
-        # получаем ходы дилера от сервиса игр
-        dealer_turns: list[dict] = await game_service.dealer_turns(chat_id)
-        if not dealer_turns:
-            await game_service.game_repo.push_ending(chat_id)
-            return
-        msg = await self.bot.send_message(
-            chat_id=chat_id,
-            text="Дилер берет карты до 17 очков.",
-        )
-        await asyncio.sleep(1.5)
-
-        # отправляем каждый ход (без последнего) дилера в чат
-        final_turn = dealer_turns.pop()
-        final_score = final_turn.get("score")
-        final_cards = final_turn.get("cards")
-        for turn in dealer_turns:
-            score = turn.get("score")
-            cards = turn.get("cards")
-            await msg.edit_text(text=f"У дилера {score} очков\nКарты: {cards}")
-            await asyncio.sleep(1.5)
-
-        # уведомляем последний ход дилера
-        dealer_res = ""
-        if final_score > 21:
-            dealer_res = "перебор"
-        text = (
-            f"У дилера {dealer_res}\n"
-            f"Очки: {final_score}\n"
-            f"Карты: {final_cards}.\n"
-            f"Сейчас будут приведены результаты игры."
-        )
-        await msg.edit_text(text=text)
-
-        await game_service.game_repo.push_ending(chat_id)
-
-
 class EventSystemTG:
     def __init__(
         self,
@@ -336,20 +179,6 @@ class EventSystemTG:
     def _create_listeners(self):
         self.listeners.append(
             GameStartingListener(
-                self.redis,
-                self.task_queue,
-                self.bot,
-            )
-        )
-        self.listeners.append(
-            GameDealerListener(
-                self.redis,
-                self.task_queue,
-                self.bot,
-            )
-        )
-        self.listeners.append(
-            GameEndingListener(
                 self.redis,
                 self.task_queue,
                 self.bot,
