@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from domain.entities import Card, Rank, Suit, Player, Dealer, PlayerResult
-from domain.types.game import GameResult, ErrorType, ErrorMessages, SuccessType
+from domain.types.game.errors import AnotherPlayerTurn, PlayerNotFound
 
 if TYPE_CHECKING:
     from src.application.schemas import GameSchema
@@ -95,23 +95,18 @@ class Game:
             "result": player.result,
         }
 
-    def _create_game_result_with_player(
+    def _get_data_turn_result(
         self,
-        success_type: SuccessType,
         player: Player = None,
         next_player: Player = None,
-        success: bool = True,
-    ) -> GameResult:
-        data = {}
+        dealer_turn: bool = False,
+    ):
+        data = {"dealer_action": self._dealer_action() if dealer_turn is True else None}
         if player:
             data["player"] = self._get_player_data(player)
-            data["dealer_turn"] = True
-        if success_type == SuccessType.HIT_ACCEPTED:
-            data["dealer_turn"] = False
         if next_player:
             data["next_player"] = self._get_player_data(next_player)
-            data["dealer_turn"] = False
-        return GameResult(success=success, type=success_type, data=data)
+        return data
 
     def the_deal(self):
         data = []
@@ -173,55 +168,32 @@ class Game:
         self,
         player_id: int,
         bid: int,
-    ) -> GameResult:
+    ):
         player = self._get_player_by_id(player_id)
         if player is None:
-            return GameResult(
-                success=False,
-                type=ErrorType.PLAYER_NOT_FOUND,
-                message=ErrorMessages.get(
-                    ErrorType.PLAYER_NOT_FOUND,
-                    player_id=player_id,
-                ),
-            )
+            raise PlayerNotFound(f"Player (id='{player_id}' not found")
 
         player.bid = bid
         if self._check_all_bets():
             cur_player = self.get_current_turn_player()
-            return GameResult(
-                success=True,
-                type=SuccessType.ALL_PLAYERS_BET,
-                data={
-                    "player": self._get_player_data(cur_player),
-                    "dealer": self._get_dealer_data(),
-                },
-            )
+            return {
+                "all_bets": True,
+                "player": self._get_player_data(cur_player),
+                "dealer": self._get_dealer_data(),
+            }
 
-        return GameResult(
-            success=True,
-            type=SuccessType.BID_ACCEPTED,
-        )
+        return {"all_bets": False}
 
     def player_hit(
         self,
         player_id: int,
-    ) -> GameResult:
+    ):
         player = self._get_player_by_id(player_id)
         if player is None:
-            return GameResult(
-                success=False,
-                type=ErrorType.PLAYER_NOT_FOUND,
-                message=ErrorMessages.get(
-                    ErrorType.PLAYER_NOT_FOUND,
-                    player_id=player_id,
-                ),
-            )
+            raise PlayerNotFound(f"Player (id='{player_id}' not found")
 
         if not self._check_is_player_turn(player=player):
-            return GameResult(
-                success=False,
-                type=ErrorType.ANOTHER_PLAYER_TURN,
-            )
+            raise AnotherPlayerTurn(f"Another player turn.")
 
         player.cards.append(self.deck.pop())
 
@@ -229,55 +201,46 @@ class Game:
         if player.is_busted():
             player.result = PlayerResult.BUST
             next_player = self.next_player()
-            return self._create_game_result_with_player(
-                success_type=SuccessType.HIT_BUSTED,
+            return self._get_data_turn_result(
                 player=player,
-                next_player=next_player if next_player else None,
+                next_player=next_player,
+                dealer_turn=True if next_player is None else False,
             )
-
         # Обработка блэкджека
         if player.has_blackjack():
             player.result = PlayerResult.BLACKJACK
             next_player = self.next_player()
-            return self._create_game_result_with_player(
-                success_type=SuccessType.HIT_BLACKJACK,
+            return self._get_data_turn_result(
                 player=player,
-                next_player=next_player if next_player else None,
+                next_player=next_player,
+                dealer_turn=True if next_player is None else False,
             )
-
         # Стандартный случай принятия карты
-        return self._create_game_result_with_player(
-            success_type=SuccessType.HIT_ACCEPTED,
-            player=player,
-        )
+        return self._get_data_turn_result(player=player)
 
     def player_stand(
         self,
         player_id: int,
-    ) -> GameResult:
+    ):
         player = self._get_player_by_id(player_id)
         if player is None:
-            return GameResult(
-                success=False,
-                type=ErrorType.PLAYER_NOT_FOUND,
-                message=ErrorMessages.get(
-                    ErrorType.PLAYER_NOT_FOUND,
-                    player_id=player_id,
-                ),
-            )
+            raise PlayerNotFound(f"Player (id='{player_id}' not found")
 
         if not self._check_is_player_turn(player=player):
-            return GameResult(
-                success=False,
-                type=ErrorType.ANOTHER_PLAYER_TURN,
-            )
+            raise AnotherPlayerTurn(f"Another player turn.")
 
         next_player = self.next_player()
-        return self._create_game_result_with_player(
-            success_type=SuccessType.STAND_ACCEPTED,
+        return self._get_data_turn_result(
             player=player,
-            next_player=next_player if next_player else None,
+            next_player=next_player,
+            dealer_turn=True if next_player is None else False,
         )
+
+    def _dealer_action(self):
+        if self.current_round == 1:
+            return {"data": self.init_second_round(), "action": "reveal"}
+        if self.current_round == 2:
+            return {"data": self.dealer_turns(), "action": "turns"}
 
     def init_second_round(self):
         self.current_round = 2

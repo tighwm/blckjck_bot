@@ -32,7 +32,10 @@ tg_event_sys = EventSystemTG(
 
 
 async def main():
-    configure_logger(filename="bot-logs/bot.log", level=logging.WARNING)
+    configure_logger(
+        filename="bot-logs/bot.log",
+        level=logging.WARNING,
+    )
     logger.info("Logger was configured.")
     aiogram_bot.dp.include_router(routers)
     event_sys_task = asyncio.create_task(tg_event_sys.start())
