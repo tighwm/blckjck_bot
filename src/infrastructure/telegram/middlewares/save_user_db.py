@@ -17,9 +17,10 @@ class SaveUserDB(BaseMiddleware):
         event: Message,
         data: Dict[str, Any],
     ) -> Any:
-        async with db_helper.session_getter() as session:
+        async with db_helper.ctx_session_getter() as session:
             user_id = event.from_user.id
             user_repo = SQLAlchemyUserRepositoryTG(session)
+            data["user_repo"] = user_repo
             user_schema = await user_repo.get_user_by_tg_id(tg_id=user_id)
             if user_schema:
                 return await handler(event, data)
@@ -28,4 +29,4 @@ class SaveUserDB(BaseMiddleware):
                 username=event.from_user.username,
             )
             await user_repo.create_user(user_in=new_user)
-        return await handler(event, data)
+            return await handler(event, data)

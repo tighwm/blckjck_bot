@@ -3,6 +3,7 @@ __all__ = (
     "CacheLobbyRepoInterface",
     "UserRepoInterface",
     "BaseTelegramUserRepo",
+    "LeaderBoardInterface",
 )
 
 from application.interfaces.cache_game_repo_interface import CacheGameRepoInterface
@@ -13,3 +14,4 @@ from application.interfaces.users_repo_interface import (
     UserRepoInterface,
     BaseTelegramUserRepo,
 )
+from application.interfaces.leaderboard import LeaderBoardInterface

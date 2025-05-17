@@ -5,15 +5,15 @@ from aiogram.types import Message
 from infrastructure.telegram.middlewares import (
     SaveUserDB,
     AntiFlood,
-    UserServiceGetter,
+    CommandServiceGetter,
 )
-from application.services import UserService
+from application.services import CommandService
 from utils.tg.functions import format_user_profile
 
 router = Router()
 router.message.middleware(AntiFlood())
 router.message.middleware(SaveUserDB())
-router.message.middleware(UserServiceGetter())
+router.message.middleware(CommandServiceGetter())
 
 
 @router.message(Command("start"))
@@ -24,10 +24,10 @@ async def handle_start(message: Message):
 @router.message(Command("profile"))
 async def handle_profile(
     message: Message,
-    user_service: UserService,
+    com_service: CommandService,
 ):
     try:
-        res = await user_service.get_user_profile(message.from_user.id)
+        res = await com_service.get_user_profile(message.from_user.id)
     except Exception as e:
         await message.answer(e.__str__())
         return

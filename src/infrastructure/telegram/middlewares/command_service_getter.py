@@ -3,14 +3,12 @@ from typing import Any, Awaitable, Callable, Dict
 from aiogram import BaseMiddleware
 from aiogram.types import Message
 
-from infrastructure.repositories import (
-    RedisLobbyCacheRepoTG,
-)
 from infrastructure.redis_py.redis_helper import redis_helper
-from application.services import LobbyServiceTG
+from infrastructure.repositories import RedisLeaderBoardRepo
+from application.services import CommandService
 
 
-class LobbyServiceGetter(BaseMiddleware):
+class CommandServiceGetter(BaseMiddleware):
     async def __call__(
         self,
         handler: Callable[[Message, Dict[str, Any]], Awaitable[Any]],
@@ -18,10 +16,11 @@ class LobbyServiceGetter(BaseMiddleware):
         data: Dict[str, Any],
     ) -> Any:
         user_repo = data.get("user_repo")
-        cache_repo = RedisLobbyCacheRepoTG(redis=redis_helper.get_redis_client())
-        lobby_service = LobbyServiceTG(
-            lobby_repo=cache_repo,
+        redis = redis_helper.get_redis_client()
+        board_repo = RedisLeaderBoardRepo(redis)
+        com_service = CommandService(
             user_repo=user_repo,
+            board_repo=board_repo,
         )
-        data["lobby_service"] = lobby_service
+        data["com_service"] = com_service
         return await handler(event, data)
