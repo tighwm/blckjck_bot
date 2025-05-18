@@ -26,17 +26,5 @@ class CacheGameRepoInterface(ABC):
         pass
 
     @abstractmethod
-    async def push_dealer(
-        self,
-        chat_id: int,
-        action: Literal["turns", "reveal"],
-    ):
-        pass
-
-    @abstractmethod
-    async def push_ending(self, chat_id: int):
-        pass
-
-    @abstractmethod
     def with_lock(self, chat_id: int):
         pass

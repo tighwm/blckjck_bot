@@ -61,25 +61,6 @@ class RedisGameCacheRepo(CacheGameRepoInterface):
         fsm_key = f"fsm:{chat_id}:{chat_id}:state"
         await self.redis.set(name=fsm_key, value="ChatState:game")
 
-    async def push_dealer(
-        self,
-        chat_id: int,
-        action: Literal["turns", "reveal"],
-    ):
-        await self.redis.xadd(
-            name=self.dealer_stream_key,
-            fields={
-                "chat_id": str(chat_id),
-                "action": action,
-            },
-        )
-
-    async def push_ending(self, chat_id: int):
-        await self.redis.xadd(
-            name=self.ending_stream_key,
-            fields={"chat_id": str(chat_id)},
-        )
-
     def with_lock(self, chat_id: int):
         return self.redis.lock(
             name=f"game-lock:{chat_id}",
