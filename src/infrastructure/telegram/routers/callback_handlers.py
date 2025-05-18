@@ -154,7 +154,7 @@ async def process_unsuccessful_response(
     await callback.answer(text=message_text, show_alert=True)
 
 
-async def _handle_post_player_action(
+async def handle_post_player_action(
     response_data: dict[str, Any],
     message: Message,
     game_service: GameServiceTG,
@@ -266,7 +266,7 @@ async def hit_action_handler(
         )
 
     if action_taken:
-        await _handle_post_player_action(response.data, callback.message, game_service)
+        await handle_post_player_action(response.data, callback.message, game_service)
     # Если action_taken = False и это не HIT_ACCEPTED, возможно, стоит что-то сделать или залогировать
 
 
@@ -322,4 +322,4 @@ async def stand_action_handler(
     )
     await callback.message.edit_reply_markup(reply_markup=None)
 
-    await _handle_post_player_action(response.data, callback.message, game_service)
+    await handle_post_player_action(response.data, callback.message, game_service)

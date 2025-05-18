@@ -1,6 +1,6 @@
 import random
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from domain.entities import Card, Rank, Suit, Player, Dealer, PlayerResult
 from domain.types.game.errors import AnotherPlayerTurn, PlayerNotFound
@@ -95,13 +95,16 @@ class Game:
             "result": player.result,
         }
 
-    def _get_data_turn_result(
+    def _get_data_result(
         self,
         player: Player = None,
         next_player: Player = None,
         dealer_turn: bool = False,
+        other_data: dict[str, Any] = None,
     ):
         data = {"dealer_action": self._dealer_action() if dealer_turn is True else None}
+        if other_data:
+            data += other_data
         if player:
             data["player"] = self._get_player_data(player)
         if next_player:
@@ -130,7 +133,7 @@ class Game:
             return self._get_player_data(player)
         return player
 
-    def next_player(self, data: bool = False) -> Player | dict | None:
+    def _next_player(self, data: bool = False) -> Player | dict | None:
         self.current_player_index += 1
         player = self.get_current_turn_player()
 
@@ -142,7 +145,7 @@ class Game:
                 return self._get_player_data(player)
             return player
 
-        return self.next_player()
+        return self._next_player()
 
     def _get_non_bid_players(self) -> list[Player]:
         non_bid = []
@@ -154,7 +157,12 @@ class Game:
     def set_out_for_player(self, player_id: int):
         player = self._get_player_by_id(player_id)
         player.result = PlayerResult.OUT
-        return self._get_player_data(player)
+        next_player = self._next_player()
+        return self._get_data_result(
+            player=player,
+            next_player=next_player,
+            dealer_turn=True if next_player is None else False,
+        )
 
     def set_out_for_non_bid_players(self):
         not_bid_players = self._get_non_bid_players()
@@ -162,7 +170,13 @@ class Game:
         for player in not_bid_players:
             player.result = PlayerResult.OUT
             data_players.append(self._get_player_data(player))
-        return data_players
+        next_player = None
+        if data_players:
+            next_player = self._next_player()
+        return self._get_data_result(
+            next_player=next_player,
+            other_data={"out_players": data_players},
+        )
 
     def player_bid(
         self,
@@ -200,8 +214,8 @@ class Game:
         # Обработка случая перебора
         if player.is_busted():
             player.result = PlayerResult.BUST
-            next_player = self.next_player()
-            return self._get_data_turn_result(
+            next_player = self._next_player()
+            return self._get_data_result(
                 player=player,
                 next_player=next_player,
                 dealer_turn=True if next_player is None else False,
@@ -209,14 +223,14 @@ class Game:
         # Обработка блэкджека
         if player.has_blackjack():
             player.result = PlayerResult.BLACKJACK
-            next_player = self.next_player()
-            return self._get_data_turn_result(
+            next_player = self._next_player()
+            return self._get_data_result(
                 player=player,
                 next_player=next_player,
                 dealer_turn=True if next_player is None else False,
             )
         # Стандартный случай принятия карты
-        return self._get_data_turn_result(player=player)
+        return self._get_data_result(player=player)
 
     def player_stand(
         self,
@@ -229,8 +243,8 @@ class Game:
         if not self._check_is_player_turn(player=player):
             raise AnotherPlayerTurn(f"Another player turn.")
 
-        next_player = self.next_player()
-        return self._get_data_turn_result(
+        next_player = self._next_player()
+        return self._get_data_result(
             player=player,
             next_player=next_player,
             dealer_turn=True if next_player is None else False,
@@ -250,7 +264,7 @@ class Game:
 
         player = self.get_current_turn_player()
         if player.result is not None:
-            player = self.next_player()
+            player = self._next_player()
         player_data = None if player is None else self._get_player_data(player)
         data["player"] = player_data
 

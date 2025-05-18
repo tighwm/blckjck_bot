@@ -8,7 +8,7 @@ from application.schemas import GameSchema, LobbySchema, UserPartial
 from application.services.timer_mng import timer_manager
 from domain.entities import Lobby, Game, Player
 from domain.types.game.errors import PlayerNotFound, AnotherPlayerTurn
-from utils.tg.functions import pass_turn_next_player
+from infrastructure.telegram.routers.callback_handlers import handle_post_player_action
 
 
 class ResponseType(Enum):
@@ -71,32 +71,25 @@ class GameServiceTG:
         player_id: int,
     ):
         chat_id = message.chat.id
-        game_schema = await self.game_repo.get_game(chat_id)
-        if game_schema is None:
-            return
-        game = Game.from_dto(game_schema)
-        player = game.set_out_for_player(player_id)
+        async with self.game_repo.with_lock(chat_id):
+            game_schema = await self.game_repo.get_game(chat_id)
+            if game_schema is None:
+                return
+            game = Game.from_dto(game_schema)
+            res = game.set_out_for_player(player_id)
+            player = res.get("player")
 
-        await message.answer(
-            f"Игрок {player.get("player_name")} исключен за бездействие."
-        )
-
-        next_player = game.next_player(data=True)
-        await self.game_repo.cache_game(game)
-        if next_player is None:
-            await message.answer(f"Ход переходит дилеру.")
-            action = "reveal" if game.current_round == 1 else "turns"
-            await self.game_repo.push_dealer(
-                chat_id=chat_id,
-                action=action,  # type: ignore
+            await message.answer(
+                f"Игрок {player.get("player_name")} исключен за бездействие."
             )
-            return
+            await message.delete_reply_markup()
 
-        await pass_turn_next_player(
-            message=message,
-            player=next_player,
-            game_service=self,
-        )
+            await self.game_repo.cache_game(game)
+            await handle_post_player_action(
+                response_data=res,
+                message=message,
+                game_service=self,
+            )
 
     async def bid_timer(
         self,
@@ -109,18 +102,20 @@ class GameServiceTG:
                 return
             game = Game.from_dto(game_schema)
 
-            players_data = game.set_out_for_non_bid_players()
-            if players_data:
-                text = format_kicked_non_bid_players(players_data=players_data)
+            res = game.set_out_for_non_bid_players()
+            out_players = res.get("out_players")
+            if out_players:
+                text = format_kicked_non_bid_players(players_data=out_players)
                 await message.answer(text)
 
-            cur_player = game.get_current_turn_player(data=True)
-            if cur_player.get("result") is not None:
-                cur_player = game.next_player(data=True)
+            if len(out_players) == len(game.players):
+                await message.answer("Пиздец.")
+                await self.game_repo.delete_cache_game(chat_id)
+                return
 
-            await pass_turn_next_player(
+            await handle_post_player_action(
+                response_data=res,
                 message=message,
-                player=cur_player,
                 game_service=self,
             )
             await self.game_repo.set_game_state(chat_id)
