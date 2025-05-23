@@ -5,10 +5,11 @@ from datetime import datetime
 class UserBase(BaseModel):
     tg_id: int
     username: str | None = None
+    date_bonus: datetime
 
 
 class UserCreate(UserBase):
-    pass
+    date_bonus: datetime | None = None
 
 
 class UserUpdate(UserCreate):
