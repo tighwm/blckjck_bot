@@ -125,6 +125,6 @@ async def handle_lobby(
     await start_update_lobby_text_timer(
         message,
         timeout,
-        lobby.str_users(),
+        lobby.names,
         lobby_service,
     )

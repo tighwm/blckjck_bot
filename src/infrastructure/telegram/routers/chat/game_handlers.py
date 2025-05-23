@@ -4,7 +4,7 @@ from aiogram import Router, F
 from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
 
-from application.services.types import ResponseType
+from application.services.serv_types import ResponseType
 from infrastructure.telegram.routers.states import ChatState
 from utils.tg.filters import ChatTypeFilter
 from utils.tg.functions import pass_turn_next_player
