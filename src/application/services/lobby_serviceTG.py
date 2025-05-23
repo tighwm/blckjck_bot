@@ -52,7 +52,7 @@ class LobbyServiceTG:
             raise ValueError("Lobby schema can't be None")
         text = (
             f"Запущено лобби на игру.\n"
-            f"Игроки: {lobby_schema.str_users()}\n"
+            f"Игроки: {lobby_schema.names}\n"
             f"Таймер: {remaining_time}"
         )
         await message.edit_text(text)
