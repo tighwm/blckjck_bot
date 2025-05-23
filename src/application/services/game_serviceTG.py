@@ -3,9 +3,9 @@ from aiogram.types import Message
 from application.interfaces import BaseTelegramUserRepo, CacheGameRepoInterface
 from application.schemas import GameSchema, LobbySchema, UserPartial
 from application.services.timer_mng import timer_manager
-from application.services.types import ResponseType, Response
+from application.services.game_types import ResponseType, Response
 from domain.entities import Lobby, Game, Player
-from domain.types.game.errors import PlayerNotFound, AnotherPlayerTurn
+from domain.types.game.exceptions import PlayerNotFound, AnotherPlayerTurn
 from utils.tg.functions import handle_post_player_action
 
 

@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
 from domain.entities import Card, Rank, Suit, Player, Dealer, PlayerResult
-from domain.types.game.errors import AnotherPlayerTurn, PlayerNotFound
+from domain.types.game.exceptions import AnotherPlayerTurn, PlayerNotFound
 
 if TYPE_CHECKING:
     from src.application.schemas import GameSchema

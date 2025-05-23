@@ -6,7 +6,7 @@ from aiogram.types import CallbackQuery
 from application.services import (
     GameServiceTG,
 )
-from application.services.types import ResponseType
+from application.services.game_types import ResponseType
 from domain.entities import PlayerResult
 from infrastructure.telegram.middlewares import (
     SaveUserDB,
