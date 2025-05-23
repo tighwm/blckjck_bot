@@ -24,6 +24,11 @@ class User(Base):
         default=100,
         server_default="100",
     )
+    date_bonus: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        default=get_utc_now,
+    )
 
     def __repr__(self):
         return (
