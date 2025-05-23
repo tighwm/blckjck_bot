@@ -1,31 +1,12 @@
-from enum import Enum, auto
-from dataclasses import dataclass
-
 from aiogram.types import Message
 
 from application.interfaces import BaseTelegramUserRepo, CacheGameRepoInterface
 from application.schemas import GameSchema, LobbySchema, UserPartial
 from application.services.timer_mng import timer_manager
+from application.services.types import ResponseType, Response
 from domain.entities import Lobby, Game, Player
 from domain.types.game.errors import PlayerNotFound, AnotherPlayerTurn
-from infrastructure.telegram.routers.callback_handlers import handle_post_player_action
-
-
-class ResponseType(Enum):
-    BID_ACCEPTED = auto()
-    BID_DENIED = auto()
-    HIT_ACCEPTED = auto()
-    STAND_ACCEPTED = auto()
-
-    PLAYER_NOT_FOUND = auto()
-    ANOTHER_PLAYER_TURN = auto()
-
-
-@dataclass
-class Response:
-    success: bool
-    type: ResponseType
-    data: dict | None = None
+from utils.tg.functions import handle_post_player_action
 
 
 def format_kicked_non_bid_players(players_data: list[dict]) -> str:
