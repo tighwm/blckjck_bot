@@ -1,5 +1,3 @@
-from typing import TYPE_CHECKING
-
 from aiogram import Router, F
 from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
@@ -9,9 +7,7 @@ from infrastructure.telegram.routers.states import ChatState
 from utils.tg.filters import ChatTypeFilter
 from utils.tg.functions import pass_turn_next_player
 from infrastructure.telegram.middlewares import GameServiceGetter, AntiFlood, SaveUserDB
-
-if TYPE_CHECKING:
-    from application.services import GameServiceTG
+from application.services import GameServiceTG
 
 router = Router()
 router.message.middleware(AntiFlood())
@@ -65,7 +61,7 @@ async def process_not_success(
 async def bid_handle(
     message: Message,
     state: FSMContext,
-    game_service: "GameServiceTG",
+    game_service: GameServiceTG,
 ):
     user_bid = int(message.text.split()[1])  # Получаем ставку из "ставка (число)"
     if user_bid < 5:
