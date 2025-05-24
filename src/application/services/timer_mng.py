@@ -9,13 +9,13 @@ logger = logging.getLogger(__name__)
 class EventTimer:
     def __init__(
         self,
-        id: str,
+        id_: str,
         timeout: int,
         event: Callable[..., Awaitable[Any]],
         *args,
         **kwargs,
     ):
-        self.id = id
+        self.id = id_
         self.timeout = timeout
         self.event = partial(event, *args, **kwargs)
 
@@ -26,7 +26,14 @@ class EventTimer:
         try:
             await self.event()
         except Exception as e:
-            logger.error("EventTimer error id=%s: %s", self.id, e)
+            import traceback
+
+            logger.error(
+                "EventTimer error id=%s: %s\nTraceback:%s",
+                self.id,
+                e,
+                traceback.format_exc(),
+            )
 
     def start(self):
         self._task = asyncio.create_task(self._timer_start())
@@ -37,21 +44,21 @@ class EventTimer:
             return
         self._task.cancel()
 
-    def __repr__(self):
+    def __str__(self):
         return f"Timer id={self.id}, timeout={self.timeout}"
 
 
 class IntervalEventTimer(EventTimer):
     def __init__(
         self,
-        id: str,
+        id_: str,
         timeout: int,
         interval: int,
         event: Callable[..., Awaitable[Any]],
         *args,
         **kwargs,
     ):
-        super().__init__(id, timeout, event, *args, **kwargs)
+        super().__init__(id_, timeout, event, *args, **kwargs)
         self.interval = interval
 
     async def _timer_start(self):
@@ -65,11 +72,14 @@ class IntervalEventTimer(EventTimer):
             try:
                 await self.event(remaining_time=remaining_time)
             except Exception as e:
+                import traceback
+
                 err_count += 1
                 logger.error(
-                    "IntervalTimer error while executing event id=%s: %s",
+                    "IntervalTimer error while executing event id=%s: %s\nTraceback:%s",
                     self.id,
                     e,
+                    traceback.format_exc(),
                 )
                 if err_count == 2:
                     break
@@ -79,8 +89,8 @@ class TimersManager:
     def __init__(self):
         self._timers: dict[str, EventTimer] = {}
 
+    @staticmethod
     def _get_timer_key(
-        self,
         timer_type: str,
         chat_id: int,
         player_id: int = None,
