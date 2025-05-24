@@ -104,7 +104,7 @@ class Game:
     ):
         data = {"dealer_action": self._dealer_action() if dealer_turn is True else None}
         if other_data:
-            data += other_data
+            data.update(other_data)
         if player:
             data["player"] = self._get_player_data(player)
         if next_player:
