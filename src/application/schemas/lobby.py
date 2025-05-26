@@ -9,4 +9,4 @@ class LobbySchema(BaseModel):
 
     @property
     def names(self):
-        return ", ".join([user.username for user in self.users])
+        return ", ".join([user.first_name for user in self.users])
