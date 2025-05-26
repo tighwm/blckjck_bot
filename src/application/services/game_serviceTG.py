@@ -108,14 +108,16 @@ class GameServiceTG:
     ) -> GameSchema | None:
         lobby = Lobby.from_dto(lobby_schema)
         players = {
-            user.tg_id: Player(username=user.username, tg_id=user.tg_id)
+            user.tg_id: Player(name=user.first_name, tg_id=user.tg_id)
             for user in lobby.users
         }
+        chat_id = lobby.chat_id
         game = Game(
-            chat_id=lobby.chat_id,
+            chat_id=chat_id,
             players=players,
         )
         game_schema = await self.game_repo.cache_game(game=game)
+        await self.game_repo.set_bid_state(chat_id)
         if not game_schema:
             return None
 
