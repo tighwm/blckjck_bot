@@ -7,6 +7,7 @@ from aiogram.types import (
     InlineKeyboardMarkup,
     Message,
 )
+from aiogram.utils import markdown
 
 from application.schemas import UserSchema
 from application.services.timer_mng import timer_manager
@@ -23,19 +24,26 @@ def game_btns(player_id: int):
     hit_data = HitData(cur_player_id=player_id)
     stand_data = StandData(cur_player_id=player_id)
     hit = InlineKeyboardButton(text="Взять карту", callback_data=hit_data.pack())
-    stand = InlineKeyboardButton(text="Воздержаться💀", callback_data=stand_data.pack())
+    stand = InlineKeyboardButton(text="Хватит", callback_data=stand_data.pack())
     row = [hit, stand]
     rows = [row]
     markup = InlineKeyboardMarkup(inline_keyboard=rows)
     return markup
 
 
+def get_user_mention(first_name: str, user_id: int):
+    return markdown.text(markdown.link(first_name, f"tg://user?id={user_id}"))
+
+
 def format_player_info(
     player_data: dict,
     additionally: str | None = None,
 ) -> str:
+    player_name = player_data.get("player_name")
+    player_id = player_data.get("player_id")
+    user_mention = get_user_mention(player_name, player_id)
     return (
-        f"У игрока {player_data.get('player_name')} {additionally if additionally else ""}\n"
+        f"У игрока {user_mention} {additionally if additionally else ""}\n"
         f"Карты: {player_data.get('cards')}\n"
         f"Очки: {player_data.get('score')}"
     )
@@ -51,17 +59,20 @@ async def pass_turn_next_player(
     game_service: "GameServiceTG",
 ):
     player_id = player.get("player_id")
-    text = f"Ход игрока {player.get("player_name")}"
+    player_name = player.get("player_name")
+    user_mention = get_user_mention(player_name, player_id)
+    text = f"Ход игрока {user_mention}"
     msg = await message.answer(
         text=text,
         reply_markup=game_btns(player_id),
+        parse_mode="MarkdownV2",
     )
     timer_manager.create_timer(
         "game:turn",
         msg.chat.id,
         game_service.kick_afk,
         player_id,
-        30,
+        15,
         msg,
         player_id,
     )
@@ -77,13 +88,14 @@ async def new_turn_current_player(
     await message.edit_text(
         text=text,
         reply_markup=game_btns(player_id=player_id),
+        parse_mode="MarkdownV2",
     )
     timer_manager.create_timer(
         "game:turn",
         message.chat.id,
         game_service.kick_afk,
         player_id,
-        30,
+        15,
         message,
         player_id,
     )
@@ -187,7 +199,7 @@ async def handle_game_ending(
     res_data = await game_service.ending_game(message.chat.id)
     if res_data:
         text = format_ending_result_text(res_data)
-        await message.answer(text)
+        await message.answer(text=text, parse_mode="MarkdownV2")
     else:
         logger.warning(
             "No data received from ending_game for chat_id %r",
@@ -203,16 +215,25 @@ def format_ending_result_text(data: dict[str, Any]) -> str:
 
     parts = []
     if win_players:
-        win_player_names = [player.get("player_name") for player in win_players]
+        win_player_names = [
+            get_user_mention(player.get("player_name"), player.get("player_id"))
+            for player in win_players
+        ]
         parts.append(f"Выиграли у крупье: {', '.join(win_player_names)}")
     if push_players:
-        push_player_names = [player.get("player_name") for player in push_players]
+        push_player_names = [
+            get_user_mention(player.get("player_name"), player.get("player_id"))
+            for player in push_players
+        ]
         parts.append(f"В ничью сыграли: {', '.join(push_player_names)}")
     if lose_players:
-        lose_player_names = [player.get("player_name") for player in lose_players]
+        lose_player_names = [
+            get_user_mention(player.get("player_name"), player.get("player_id"))
+            for player in lose_players
+        ]
         parts.append(f"Проиграли ставку: {', '.join(lose_player_names)}")
 
-    return "\n".join(parts) if parts else "Нет результатов для отображения."
+    return "\n".join(parts) if parts else "Нет результатов для отображения\\."
 
 
 def format_dealer_reveal_text(data: dict[str, Any]) -> str:

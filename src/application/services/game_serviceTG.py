@@ -90,7 +90,7 @@ class GameServiceTG:
                 await message.answer(text)
 
             if len(out_players) == len(game.players):
-                await message.answer("Пиздец.")
+                await message.answer("Ставок нет, игра отменяется.")
                 await self.game_repo.delete_cache_game(chat_id)
                 return
 

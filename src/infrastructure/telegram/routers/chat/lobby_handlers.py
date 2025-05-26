@@ -12,6 +12,7 @@ from infrastructure.telegram.middlewares import (
     AntiFlood,
 )
 from utils.tg.filters import ChatTypeFilter
+from utils.tg.functions import get_user_mention
 
 router = Router()
 router.message.middleware(AntiFlood())
@@ -35,6 +36,24 @@ async def start_update_lobby_text_timer(
         timeout,
         5,
         msg,
+    )
+
+
+@router.message(
+    ChatTypeFilter(["group", "supergroup"]),
+    Command("leave"),
+    ChatState.lobby,
+)
+async def handle_leave(message: Message, lobby_service: LobbyServiceTG):
+    await lobby_service.remove_user(
+        chat_id=message.chat.id,
+        user_id=message.from_user.id,
+    )
+    user_mention = get_user_mention(message.from_user.first_name, message.from_user.id)
+    text = f"{user_mention} покинул лобби\\."
+    await message.answer(
+        text=text,
+        parse_mode="MarkdownV2",
     )
 
 
@@ -64,16 +83,20 @@ async def handle_join(
     message: Message,
     lobby_service: LobbyServiceTG,
 ):
+    user_id = message.from_user.id
+    name = message.from_user.first_name
     lobby = await lobby_service.add_user(
         chat_id=message.chat.id,
-        user_id=message.from_user.id,
+        user_id=user_id,
+        first_name=name,
     )
     if lobby is None:
         await message.answer("Ты уже в игре.")
         return
 
     await message.answer(
-        f"Пользователь {message.from_user.username} присоединился к игре."
+        f"Пользователь {get_user_mention(name, user_id)} присоединился к игре\\.",
+        parse_mode="MarkdownV2",
     )
 
 
@@ -116,6 +139,7 @@ async def handle_lobby(
         chat_id=chat_id,
         user_id=message.from_user.id,
         timeout=timeout,
+        first_name=message.from_user.first_name,
     )
     if not lobby:
         await message.answer(f"Игра начата и так.")

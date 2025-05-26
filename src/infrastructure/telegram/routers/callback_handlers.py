@@ -19,6 +19,7 @@ from utils.tg.functions import (
     format_player_info,
     new_turn_current_player,
     handle_post_player_action,
+    get_user_mention,
 )
 
 logger = logging.getLogger(__name__)
@@ -98,12 +99,14 @@ async def hit_action_handler(
 
     if player_result == PlayerResult.BLACKJACK:
         await callback.message.edit_text(
-            text=format_player_info(player_data, "блек-джек."),
+            text=format_player_info(player_data, "блек-джек\\."),
+            parse_mode="MarkdownV2",
         )
         action_taken = True
     elif player_result == PlayerResult.BUST:
         await callback.message.edit_text(
-            text=format_player_info(player_data, "перебор."),
+            text=format_player_info(player_data, "перебор\\."),
+            parse_mode="MarkdownV2",
         )
         action_taken = True
     elif response.type == ResponseType.HIT_ACCEPTED:
@@ -171,9 +174,10 @@ async def stand_action_handler(
             user_tg_id,
         )
         return
-
+    player_name = player_data.get("player_name")
     await callback.message.answer(
-        f"Игрок {player_data.get('player_name', 'Неизвестный игрок')} воздержался."
+        f"Игрок {get_user_mention(player_name, user_tg_id)} воздержался\\.",
+        parse_mode="MarkdownV2",
     )
     await callback.message.edit_reply_markup(reply_markup=None)
 

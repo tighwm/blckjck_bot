@@ -1,6 +1,7 @@
 from aiogram import Router, F
 from aiogram.types import Message
 from aiogram.fsm.context import FSMContext
+from aiogram.utils import markdown
 
 from application.services.game_types import ResponseType
 from infrastructure.telegram.routers.states import ChatState
@@ -22,7 +23,7 @@ def format_dealer_cards_text(dealer_data: dict) -> str:
     return (
         f"Карты дилера\n"
         f"Первая: {dealer_data.get("first_card")}\n"
-        f"Вторая: ***\n"
+        f"Вторая: \*\*\*\n"
         f"Очки: {dealer_data.get("score")}"
     )
 
@@ -31,10 +32,16 @@ def text_deal_process(
     data: dict,
 ) -> str:
     deal_data = data.get("the_deal")
-    text = "Первая раздача карт игрокам.\n"
+    text = "Первая раздача карт игрокам\.\n"
     for player in deal_data:
+        user_mention = markdown.text(
+            markdown.link(
+                player.get("player_name"),
+                f"tg://user?id={player.get("player_id")}",
+            ),
+        )
         text += (
-            f"Карты игрока {player.get("player_name")}\n"
+            f"Карты игрока {user_mention}\n"
             f"{player.get("cards")} {"" if player.get("result") is None else " Блекджек💀"}\n"
             f"Очки: {player.get("score")}\n \n"
         )
@@ -84,7 +91,7 @@ async def bid_handle(
         await state.set_state(ChatState.game)
 
         text = text_deal_process(response.data)
-        await message.answer(text=text)
+        await message.answer(text=text, parse_mode="MarkdownV2")
 
         player = response.data.get("player")
         await pass_turn_next_player(message, player, game_service)
