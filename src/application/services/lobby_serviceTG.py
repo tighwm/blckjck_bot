@@ -116,9 +116,8 @@ class LobbyServiceTG:
             ):
                 return None
 
-            user = await self._get_user_entities(user_id=user_id)
             lobby = Lobby.from_dto(lobby_schema)
-            lobby.delete_user(user)
+            lobby.delete_user(user_id)
             return await self.lobby_repo.cache_lobby(lobby=lobby)
 
     async def cancel_lobby(

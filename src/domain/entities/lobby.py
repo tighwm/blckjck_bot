@@ -20,9 +20,12 @@ class Lobby:
 
     def delete_user(
         self,
-        user: User,
+        user_tg_id: int,
     ):
-        self.users.remove(user)
+        for user in self.users:
+            if user.tg_id == user_tg_id:
+                self.users.remove(user)
+                break
 
     @classmethod
     def from_dto(cls, data: "LobbySchema") -> "Lobby":
