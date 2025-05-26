@@ -10,7 +10,6 @@ from aiogram import Bot
 from application.services import GameServiceTG
 from application.services.timer_mng import timer_manager
 from application.schemas import LobbySchema
-from utils.tg.functions import pass_turn_next_player
 from infrastructure.database.models.db_helper import db_helper
 from infrastructure.repositories import RedisGameCacheRepo, SQLAlchemyUserRepositoryTG
 from infrastructure.redis_py.redis_helper import redis_helper
@@ -143,8 +142,15 @@ class GameStartingListener(StreamListener):
         game_service: GameServiceTG,
         lobby_schema: LobbySchema,
     ):
-        await game_service.create_game(lobby_schema=lobby_schema)
         chat_id = lobby_schema.chat_id
+        if not lobby_schema.users:
+            await self.bot.send_message(
+                chat_id=chat_id,
+                text="Нет игроков для начала игры.",
+            )
+            await self.redis.delete(f"fsm:{chat_id}:{chat_id}:state")
+            return
+        await game_service.create_game(lobby_schema=lobby_schema)
         msg = await self.bot.send_message(
             chat_id=chat_id,
             text="Делайте ставки к началу игры.",
