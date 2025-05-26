@@ -1,5 +1,3 @@
-from typing import Literal
-
 from redis.asyncio import Redis
 
 from application.interfaces.cache_game_repo_interface import CacheGameRepoInterface
@@ -12,13 +10,9 @@ class RedisGameCacheRepo(CacheGameRepoInterface):
         self,
         redis: Redis,
         key_prefix: str = "Game",
-        dealer_stream_key: str = "game:dealer",
-        ending_stream_key: str = "game:ending",
     ):
         self.redis = redis
         self.key_prefix = key_prefix
-        self.dealer_stream_key = dealer_stream_key
-        self.ending_stream_key = ending_stream_key
 
     def _get_key(self, chat_id: int) -> str:
         return f"{self.key_prefix}:{chat_id}"
@@ -67,3 +61,7 @@ class RedisGameCacheRepo(CacheGameRepoInterface):
             timeout=3,
             blocking_timeout=5,
         )
+
+    async def set_bid_state(self, chat_id: int):
+        fsm_key = f"fsm:{chat_id}:{chat_id}:state"
+        await self.redis.set(name=fsm_key, value="ChatState:bid")

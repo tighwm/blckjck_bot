@@ -49,7 +49,3 @@ class BaseCacheLobbyRepoTG(CacheLobbyRepoInterface):
     @abstractmethod
     async def push_starting(self, chat_id: int):
         pass
-
-    @abstractmethod
-    async def set_bid_state(self, chat_id: int):
-        pass

@@ -80,7 +80,3 @@ class RedisLobbyCacheRepoTG(BaseCacheLobbyRepoTG):
             return None
 
         await self.redis.xadd(name=self.stream_key, fields={"lobby_data": data})
-
-    async def set_bid_state(self, chat_id: int):
-        fsm_key = f"fsm:{chat_id}:{chat_id}:state"
-        await self.redis.set(name=fsm_key, value="ChatState:bid")

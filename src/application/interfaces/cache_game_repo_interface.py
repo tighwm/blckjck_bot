@@ -28,3 +28,7 @@ class CacheGameRepoInterface(ABC):
     @abstractmethod
     def with_lock(self, chat_id: int):
         pass
+
+    @abstractmethod
+    async def set_bid_state(self, chat_id: int):
+        pass
