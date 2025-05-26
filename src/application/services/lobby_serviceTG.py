@@ -29,15 +29,16 @@ class LobbyServiceTG:
     async def _get_user_entities(
         self,
         user_id: int,
+        first_name: str,
     ) -> User:
         user_schema = await self.user_repo.get_user_by_tg_id(tg_id=user_id)
+        user_schema.first_name = first_name
         return User.from_dto(user_schema)
 
     async def _lobby_timer(self, chat_id: int):
         async with self.lobby_repo.with_lock(chat_id):
             await self.lobby_repo.push_starting(chat_id=chat_id)
             await self.lobby_repo.delete_lobby(chat_id)
-            await self.lobby_repo.set_bid_state(chat_id)
 
     async def lobby_interval_timer(
         self,
@@ -61,6 +62,7 @@ class LobbyServiceTG:
         self,
         chat_id: int,
         user_id: int,
+        first_name: str,
         timeout: int,
     ) -> LobbySchema | None:
         async with self.lobby_repo.with_lock(chat_id):
@@ -69,6 +71,7 @@ class LobbyServiceTG:
                 return None
 
             user_schema = await self.user_repo.get_user_by_tg_id(tg_id=user_id)
+            user_schema.first_name = first_name
             user = User.from_dto(user_schema)
             lobby = Lobby(chat_id=chat_id, users=[user])
             timer_manager.create_timer(
@@ -85,6 +88,7 @@ class LobbyServiceTG:
         self,
         chat_id: int,
         user_id: int,
+        first_name: str,
     ) -> LobbySchema | None:
         async with self.lobby_repo.with_lock(chat_id):
             lobby_schema = await self.lobby_repo.get_lobby(chat_id=chat_id)
@@ -96,7 +100,10 @@ class LobbyServiceTG:
             ):
                 return None
 
-            user = await self._get_user_entities(user_id=user_id)
+            user = await self._get_user_entities(
+                user_id=user_id,
+                first_name=first_name,
+            )
             lobby = Lobby.from_dto(lobby_schema)
             lobby.add_user(user)
             return await self.lobby_repo.cache_lobby(lobby=lobby)
