@@ -18,7 +18,7 @@ class PlayerResult(Enum):
 
 @dataclass
 class Player:
-    username: str | None
+    name: str | None
     tg_id: int
     bid: int = 0
     cards: list[Card] = field(default_factory=list)
@@ -55,7 +55,7 @@ class Player:
     @classmethod
     def from_dto(cls, data: "PlayerSchema") -> "Player":
         return cls(
-            username=data.username,
+            name=data.name,
             tg_id=data.tg_id,
             bid=data.bid,
             cards=[Card.from_dto(card_schema) for card_schema in data.cards],

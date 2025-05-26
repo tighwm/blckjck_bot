@@ -87,7 +87,7 @@ class Game:
     @staticmethod
     def _get_player_data(player: Player) -> dict:
         return {
-            "player_name": player.username,
+            "player_name": player.name,
             "cards": player.cards_str(),
             "score": player.score,
             "player_id": player.tg_id,
