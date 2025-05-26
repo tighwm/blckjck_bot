@@ -4,6 +4,7 @@ from datetime import datetime
 
 class UserBase(BaseModel):
     tg_id: int
+    first_name: str | None = None
     username: str | None = None
     date_bonus: datetime
 

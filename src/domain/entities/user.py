@@ -18,6 +18,7 @@ BONUS_DELTA = timedelta(days=1)
 class User:
     id: int
     tg_id: int
+    first_name: str
     username: str | None
     balance: int
     registered_at: datetime
@@ -28,6 +29,7 @@ class User:
         return cls(
             id=data.id,
             tg_id=data.tg_id,
+            first_name=data.first_name,
             username=data.username,
             balance=data.balance,
             registered_at=data.registered_at,
