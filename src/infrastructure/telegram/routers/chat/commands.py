@@ -17,11 +17,6 @@ router.message.middleware(SaveUserDB())
 router.message.middleware(CommandServiceGetter())
 
 
-@router.message(Command("start"))
-async def handle_start(message: Message):
-    await message.answer("Да живой я блять.")
-
-
 @router.message(Command("profile"))
 async def handle_profile(
     message: Message,
