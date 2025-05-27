@@ -23,7 +23,7 @@ def format_dealer_cards_text(dealer_data: dict) -> str:
     return (
         f"Карты дилера\n"
         f"Первая: {dealer_data.get("first_card")}\n"
-        f"Вторая: \*\*\*\n"
+        f"Вторая: \\*\\*\\*\n"
         f"Очки: {dealer_data.get("score")}"
     )
 
@@ -32,7 +32,7 @@ def text_deal_process(
     data: dict,
 ) -> str:
     deal_data = data.get("the_deal")
-    text = "Первая раздача карт игрокам\.\n"
+    text = "Первая раздача карт игрокам\\.\n"
     for player in deal_data:
         user_mention = markdown.text(
             markdown.link(

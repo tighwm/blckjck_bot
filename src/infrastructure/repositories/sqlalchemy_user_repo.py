@@ -16,7 +16,7 @@ class SQLAlchemyUserRepositoryTG(BaseTelegramUserRepo):
         self,
         user_in: UserCreate,
     ) -> UserSchema:
-        user_model = UserModel(**user_in.model_dump())
+        user_model = UserModel(**user_in.model_dump(exclude_none=True))
         self.session.add(user_model)
         await self.session.commit()
         return UserSchema.model_validate(user_model)
