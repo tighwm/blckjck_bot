@@ -50,5 +50,3 @@ docker compose up -d
 2. Start a new game and invite other players
 3. Follow the bot's instructions to play blackjack
 
-## **Contributing**
-Feel free to submit issues and pull requests to improve the bot.
